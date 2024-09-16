@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn import tree
 
 
 df = pd.read_table('dialog_acts.dat')
@@ -64,18 +65,18 @@ def keyword_baseline():
         'inform' : ['any', 'looking'],
         'request' : ['what', 'whats'],
         'thankyou' : ['thank', 'thanks'],
-        'reqalts' : [],
-        'null' : [],
-        'affirm' : [],
-        'negate' : [],
+        'reqalts' : ['else', 'about'], 
+        'null' : ['noise', 'cough'],
+        'affirm' : ['yes'],
+        'negate' : ['no'],
         'bye' : ['bye', 'goodbye', 'adieu'],
-        'confirm' : [],
-        'repeat' : [],
-        'ack' : [],
-        'hello' : [],
-        'deny' : [],
-        'restart' : [],
-        'reqmore' : []
+        'confirm' : ['does', 'serve'],
+        'repeat' : ['repeat', 'again'],
+        'ack' : ['okay', 'um'],
+        'hello' : ['hello', 'hi'],
+        'deny' : ['dont', 'wrong'],
+        'restart' : ['start', 'again'],
+        'reqmore' : ['more']
     }
 
     while True:
@@ -100,6 +101,21 @@ def keyword_baseline():
             print('Utterance is classified as: inform \n')
             keyword_found_check = False
 
+# Train a minimum of two different machine learning classifiers on the dialog act data. 
+  # Possible classifiers include Decision Trees, Logistic Regression, or a Feed Forward neural network.
+  # 
+  # Use a bag of words representation as input for your classifier. 
+  # Depending on the classifier that you use and the setup of your machine learning pipeline you may need to keep an integer (for example 0) 
+  # for out-of-vocabulary words, i.e., when a test sentence is entered that contains a word which was not in the training data, 
+  # and therefore the word is not in the mapping, assign the special integer. After training, testing, and reporting performance, 
+  # the program should offer a prompt to enter a new sentence and classify this sentence, and repeat the prompt until the user exits.
+def trees():
+# https://scikit-learn.org/stable/modules/tree.html#classification 1.10.1. classification
+    return
+
+def knearest():
+# https://scikit-learn.org/stable/modules/neighbors.html#nearest-neighbors-classification 1.6.2. Nearest Neighbors Classification
+    return 
 
 
 def main():
@@ -107,5 +123,9 @@ def main():
     #majority_baseline(test_df)
     keyword_baseline()
 
-if __name__ == '__main__':
-  main()
+main()
+
+#if __name__ == '__main__':
+  
+
+  
