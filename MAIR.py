@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import preprocessing
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import classification_report, accuracy_score
 
 
 df = pd.read_table('dialog_acts.dat')
@@ -109,9 +112,50 @@ def keyword_baseline():
   # for out-of-vocabulary words, i.e., when a test sentence is entered that contains a word which was not in the training data, 
   # and therefore the word is not in the mapping, assign the special integer. After training, testing, and reporting performance, 
   # the program should offer a prompt to enter a new sentence and classify this sentence, and repeat the prompt until the user exits.
-def trees():
+
+
 # https://scikit-learn.org/stable/modules/tree.html#classification 1.10.1. classification
-    return
+# https://scikit-learn.org/stable/modules/preprocessing.html#encoding-categorical-features preprocessing
+def CreateTree(df=train_df, target_column='dialog_act', feature_column='utterance_content'):
+    features_train = df[feature_column]
+    target_train = df[target_column]
+    
+    # Retains only unique labels
+    labels = set(df[target_column].unique())
+
+    #One Hot encoding the utterances WERKT NIET
+    # enc = preprocessing.OneHotEncoder()
+    # labels_enc = enc.fit_transform(features_train).toarray()
+
+    # Count vectorizer lijkt wel te werken
+    vectorizer = CountVectorizer()
+    features_encoded = vectorizer.fit_transform(features_train)
+
+    # label encoder voor de target column
+    label_encoder = preprocessing.LabelEncoder()
+    target_encoded = label_encoder.fit_transform(target_train)
+
+    clf = DecisionTreeClassifier()
+    clf.fit(features_encoded, target_encoded)
+
+    return clf, vectorizer, label_encoder
+
+def TestTree(tree, vectorizer, label_encoder, df=test_df, target_column='dialog_act', feature_column='utterance_content'):
+
+    features_test = df[feature_column]
+    target_test = df[target_column]
+
+    # Count vectorizer
+    features_encoded = vectorizer.transform(features_test)
+
+    # label encoder voor de target column
+    target_encoded = label_encoder.transform(target_test)
+
+    target_predict = tree.predict(features_encoded)
+    accuracy = accuracy_score(target_encoded, target_predict)
+    report = classification_report(target_encoded, target_predict, target_names=label_encoder.classes_)
+
+    print(report)
 
 def knearest():
 # https://scikit-learn.org/stable/modules/neighbors.html#nearest-neighbors-classification 1.6.2. Nearest Neighbors Classification
@@ -119,9 +163,11 @@ def knearest():
 
 
 def main():
-    label_count(df)
+    #label_count(df)
     #majority_baseline(test_df)
-    keyword_baseline()
+    #keyword_baseline()
+    tree, vectorizer, label_encoder = CreateTree()
+    TestTree(tree, vectorizer, label_encoder)
 
 main()
 
