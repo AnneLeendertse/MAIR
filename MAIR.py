@@ -43,6 +43,8 @@ def ask_utterance():
     return utterance
 
 
+# Classifier 0 == majority_baseline
+# Classifier 1 == keyword_baseline
 def perform_classification(dataframe, classifier):
     while True:
         utterance = ask_utterance()
