@@ -114,6 +114,37 @@ def keyword_baseline(utterance):
         return 'inform'
 
 
+
+def check_baseline_performance(dataframe, classifier):
+    total_classifications = 0
+    correct_classifications = 0
+
+    # iterating over rows using iterrows() function
+    for index, row in dataframe.iterrows():
+        utterance = row['utterance_content']
+        
+        if classifier == 0:
+            label = majority_baseline(dataframe)
+
+            if label == row['dialog_act']:
+                correct_classifications += 1
+            
+            total_classifications += 1
+            
+
+        elif classifier == 1:
+            label = keyword_baseline(utterance)
+            
+            if label == row['dialog_act']:
+                correct_classifications += 1
+
+            total_classifications += 1
+        
+    print('The accuracy is: ', (correct_classifications / total_classifications) * 100, '% \n')
+
+
+
+
 # Train a minimum of two different machine learning classifiers on the dialog act data. 
   # Possible classifiers include Decision Trees, Logistic Regression, or a Feed Forward neural network.
   # 
@@ -176,7 +207,10 @@ def main():
     #label_count(df)
     #majority_baseline(test_df)
     #keyword_baseline()
-    perform_classification(test_df, 1)
+    #perform_classification(test_df, 1)
+
+    check_baseline_performance(test_df, 0)
+    check_baseline_performance(test_df, 1)
 
     tree, vectorizer, label_encoder = CreateTree()
     TestTree(tree, vectorizer, label_encoder)
