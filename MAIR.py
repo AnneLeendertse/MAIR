@@ -37,12 +37,33 @@ def label_count(dataframe):
     print()
 
 
-
 # Quick function to reuse for asking prompts from user and converts to lower case
 def ask_utterance():
     utterance = input("Insert prompt or type 'quit': ").lower()
     return utterance
 
+
+def perform_classification(dataframe, classifier):
+    while True:
+        utterance = ask_utterance()
+
+         # Checks if user wants to exit
+        if utterance == 'quit':
+            break
+        
+        # Performs the chosen way of classificaiton
+        elif classifier == 0:
+            label = majority_baseline(dataframe)
+            print('Utterance is classified as: ', label, '\n')
+        elif classifier == 1:
+            label = keyword_baseline(utterance)
+            print('Utterance is classified as: ', label, '\n')
+        elif classifier == 2:
+            # First machine learning technique
+            pass
+        else:
+            # Second machine learning technique
+            pass
 
 
 # IMPLEMENT: A baseline system that, regardless of the content of the utterance, always assigns the majority class of in the data. 
@@ -52,18 +73,12 @@ def ask_utterance():
 def majority_baseline(dataframe):
     # Obtains majority label from dataframe
     majority_label = dataframe['dialog_act'].value_counts().idxmax()
-    while True:
-        utterance = ask_utterance()
-
-        # Checks if user wants to exit
-        if utterance == 'quit':
-            break
-
-        print('Utterance is classified as: ', majority_label, '\n')
+    return majority_label
 
 
 # A baseline system that classifies an uttertance based on keywords
-def keyword_baseline():
+# A baseline system that classifies an uttertance based on keywords
+def keyword_baseline(utterance):
     label_keywords = {
         'inform' : ['any', 'looking'],
         'request' : ['what', 'whats'],
@@ -82,27 +97,20 @@ def keyword_baseline():
         'reqmore' : ['more']
     }
 
-    while True:
-        utterance = ask_utterance()
+    # Splits prompt into words
+    utterance_split = utterance.split(' ')
 
-        # Checks if user wants to exit
-        if utterance == 'quit':
-            break
-
-        # Splits prompt into words
-        utterance_split = utterance.split(' ')
-
-        # Loops through keywords and words and classifies the utterance accordingly
+    # Loops through keywords and words and classifies the utterance accordingly
+    keyword_found_check = False
+    for label, keywords in label_keywords.items():
+        for word in utterance_split:
+            if word in keywords:
+                keyword_found_check = True
+                return label
+    if not keyword_found_check:        
         keyword_found_check = False
-        for label, keywords in label_keywords.items():
-            for word in utterance_split:
-                if word in keywords:
-                    print('Utterance is classified as: ', label, '\n')
-                    keyword_found_check = True
-                    break
-        if not keyword_found_check:        
-            print('Utterance is classified as: inform \n')
-            keyword_found_check = False
+        return 'inform'
+
 
 # Train a minimum of two different machine learning classifiers on the dialog act data. 
   # Possible classifiers include Decision Trees, Logistic Regression, or a Feed Forward neural network.
@@ -166,6 +174,8 @@ def main():
     #label_count(df)
     #majority_baseline(test_df)
     #keyword_baseline()
+    perform_classification(test_df, 1)
+
     tree, vectorizer, label_encoder = CreateTree()
     TestTree(tree, vectorizer, label_encoder)
 
