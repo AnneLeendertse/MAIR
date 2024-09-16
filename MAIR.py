@@ -5,6 +5,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report, accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
 
 
 df = pd.read_table('dialog_acts.dat')
@@ -16,8 +17,6 @@ df = df.drop('inform im looking for a moderately priced restaurant that serves',
 
 # Split the full dataset in a training part of 85% and a test part of 15%.
 train_df, test_df = train_test_split(df, test_size=0.15, random_state=0)
-
-
 
 # Function that counts amount of instances of all unique labels in the dataframe (just to get insight in the data)
 def label_count(dataframe):
@@ -45,7 +44,10 @@ def ask_utterance():
 
 # Classifier 0 == majority_baseline
 # Classifier 1 == keyword_baseline
-def perform_classification(dataframe, classifier):
+# Classifier 2 == Decision trees
+# Classifier 4 == K-Nearest neighbors
+
+def perform_classification(dataframe, classifier, train_df=train_df):
     while True:
         utterance = ask_utterance()
 
@@ -61,11 +63,17 @@ def perform_classification(dataframe, classifier):
             label = keyword_baseline(utterance)
             print('Utterance is classified as: ', label, '\n')
         elif classifier == 2:
-            # First machine learning technique
-            pass
+            # First machine learning technique: Decision trees
+            tree, vectorizer, label_encoder = CreateTree(train_df)
+            utterance_enc = vectorizer.transform(utterance) # DOES NOT WORK YET
+            label = tree.predict(utterance_enc)
+            print('Utterance is classified as: ', label, '\n')
         else:
-            # Second machine learning technique
-            pass
+            # Second machine learning technique: K nearest neighbors (K=5)
+            kn = CreateKNearest(dataframe) 
+            label = kn.predict(utterance) # DOES NOT WORK YET
+            print('Utterance is classified as: ', label, '\n')
+            
 
 
 # IMPLEMENT: A baseline system that, regardless of the content of the utterance, always assigns the majority class of in the data. 
@@ -78,7 +86,6 @@ def majority_baseline(dataframe):
     return majority_label
 
 
-# A baseline system that classifies an uttertance based on keywords
 # A baseline system that classifies an uttertance based on keywords
 def keyword_baseline(utterance):
     label_keywords = {
@@ -159,10 +166,6 @@ def CreateTree(df=train_df, target_column='dialog_act', feature_column='utteranc
     # Retains only unique labels
     labels = set(df[target_column].unique())
 
-    #One Hot encoding the utterances WERKT NIET
-    # enc = preprocessing.OneHotEncoder()
-    # labels_enc = enc.fit_transform(features_train).toarray()
-
     # Count vectorizer lijkt wel te werken
     vectorizer = CountVectorizer()
     features_encoded = vectorizer.fit_transform(features_train)
@@ -171,6 +174,7 @@ def CreateTree(df=train_df, target_column='dialog_act', feature_column='utteranc
     label_encoder = preprocessing.LabelEncoder()
     target_encoded = label_encoder.fit_transform(target_train)
 
+    # Fit data to decision tree
     clf = DecisionTreeClassifier()
     clf.fit(features_encoded, target_encoded)
 
@@ -188,14 +192,50 @@ def TestTree(tree, vectorizer, label_encoder, df=test_df, target_column='dialog_
     target_encoded = label_encoder.transform(target_test)
 
     target_predict = tree.predict(features_encoded)
-    accuracy = accuracy_score(target_encoded, target_predict)
+    # accuracy = accuracy_score(target_encoded, target_predict) # Overbodig eigenlijk, ook al in de report
     report = classification_report(target_encoded, target_predict, target_names=label_encoder.classes_)
 
     print(report)
 
-def knearest():
 # https://scikit-learn.org/stable/modules/neighbors.html#nearest-neighbors-classification 1.6.2. Nearest Neighbors Classification
-    return 
+# --> weights = 'distance'
+def CreateKNearest(train_df=train_df, target_column='dialog_act', feature_column='utterance_content'):
+    features_train = train_df[feature_column]
+    target_train = train_df[target_column]
+    
+    # Retains only unique labels
+    labels = set(train_df[target_column].unique())
+
+    # Count vectorizer
+    vectorizer = CountVectorizer()
+    features_encoded = vectorizer.fit_transform(features_train)
+
+    # label encoder voor de target column
+    label_encoder = preprocessing.LabelEncoder()
+    target_encoded = label_encoder.fit_transform(target_train)
+    
+    #K nearest neighbors classifier maken en fitten
+    kn = KNeighborsClassifier(weights='distance')
+    kn.fit(features_encoded, target_encoded)
+
+    return kn, vectorizer, label_encoder
+
+def TestKN(kn, vectorizer, label_encoder, df=test_df, target_column='dialog_act', feature_column='utterance_content'):
+
+    features_test = df[feature_column]
+    target_test = df[target_column]
+
+    # Count vectorizer
+    features_encoded = vectorizer.transform(features_test)
+
+    # label encoder voor de target column
+    target_encoded = label_encoder.transform(target_test)
+
+    target_predict = kn.predict(features_encoded)
+    # accuracy = accuracy_score(target_encoded, target_predict) # Overbodig eigenlijk, ook al in de report
+    report = classification_report(target_encoded, target_predict, target_names=label_encoder.classes_)
+
+    print(report)
 
 
 def main():
@@ -207,12 +247,11 @@ def main():
     check_baseline_performance(test_df, 0)
     check_baseline_performance(test_df, 1)
 
-    tree, vectorizer, label_encoder = CreateTree()
-    TestTree(tree, vectorizer, label_encoder)
+
+    kn, vectorizer, label_encoder = CreateKNearest()
+    TestKN(kn, vectorizer, label_encoder)
+    perform_classification(df,1)
 
 main()
 
-#if __name__ == '__main__':
-  
-
-  
+#if __name__ == '__main__':  
