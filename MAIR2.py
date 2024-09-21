@@ -90,6 +90,22 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
             return label_text
 
+# Function that finds possible restaurants in restaurants_info.csv based on food type, area and price range 
+# and returns list of the entire row of restaurant info from the dataframe
+def find_restaurant(foodtype, area, price):
+    df = pd.read_csv('./restaurants_info.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode"])
+    
+    possible_restaurants = []
+
+    for index, row in df.iterrows():
+
+        if row['food'] == foodtype or foodtype == None:
+            if row['area'] == area or area == None:
+                if row['pricerange'] == price or price == None:
+                    possible_restaurants.append(row)
+
+    return possible_restaurants
+
 
 # Class that:
 # # # # stores dialog state, food type, area, price range
