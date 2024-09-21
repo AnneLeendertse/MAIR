@@ -65,14 +65,19 @@ def perform_classification(dataframe, classifier, train_df=train_df):
         elif classifier == 2:
             # First machine learning technique: Decision trees
             tree, vectorizer, label_encoder = CreateTree(train_df)
-            utterance_enc = vectorizer.transform(utterance) # DOES NOT WORK YET
-            label = tree.predict(utterance_enc)
-            print('Utterance is classified as: ', label, '\n')
+            utterance_vec = vectorizer.transform([utterance]) # DOES NOT WORK YET
+            label_int = tree.predict(utterance_vec)
+            label_text = label_encoder.inverse_transform(label_int)
+
+            print('Utterance is classified as: ', label_text, '\n')
         else:
             # Second machine learning technique: K nearest neighbors (K=5)
-            kn = CreateKNearest(dataframe) 
-            label = kn.predict(utterance) # DOES NOT WORK YET
-            print('Utterance is classified as: ', label, '\n')
+            kn, vectorizer, label_encoder = CreateKNearest(dataframe)
+            utterance_vec = vectorizer.transform([utterance])
+            label_int = kn.predict(utterance_vec) # DOES NOT WORK YET
+            label_text = label_encoder.inverse_transform(label_int)
+
+            print('Utterance is classified as: ', label_text, '\n')
             
 
 
@@ -250,7 +255,13 @@ def main():
 
     kn, vectorizer, label_encoder = CreateKNearest()
     TestKN(kn, vectorizer, label_encoder)
-    perform_classification(df,1)
+
+
+    perform_classification(df,3)
+
+    perform_classification(df, 2)
+
+
 
 main()
 
