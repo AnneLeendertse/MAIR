@@ -252,6 +252,7 @@ def main():
     check_baseline_performance(test_df, 0)
     check_baseline_performance(test_df, 1)
 
+    
 
     kn, vectorizer, label_encoder = CreateKNearest()
     TestKN(kn, vectorizer, label_encoder)
