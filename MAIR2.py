@@ -79,46 +79,47 @@ def ask_utterance():
 tree, vectorizer_tree, label_encoder_tree = CreateTree(train_df)
 kn, vectorizer_kn, label_encoder_kn = CreateKNearest(train_df)
 
-def perform_classification(utterance, classifier=0):
-    if classifier == 0:
-        # Decision tree classification
-        utterance_vec = vectorizer_tree.transform([utterance])
-        label_int = tree.predict(utterance_vec)
-        label_text = label_encoder_tree.inverse_transform(label_int)
-        return label_text[0]
-    else:
-        # K-nearest neighbors classification
-        utterance_vec = vectorizer_kn.transform([utterance])
-        label_int = kn.predict(utterance_vec)
-        label_text = label_encoder_kn.inverse_transform(label_int)
-        return label_text[0]
-    
 
+# both functions below work (I think) 
+
+# def perform_classification(utterance, classifier=0):
+#     if classifier == 0:
+#         # Decision tree classification
+#         utterance_vec = vectorizer_tree.transform([utterance])
+#         label_int = tree.predict(utterance_vec)
+#         label_text = label_encoder_tree.inverse_transform(label_int)
+#         return label_text[0]
+#     else:
+#         # K-nearest neighbors classification
+#         utterance_vec = vectorizer_kn.transform([utterance])
+#         label_int = kn.predict(utterance_vec)
+#         label_text = label_encoder_kn.inverse_transform(label_int)
+#         return label_text[0]
 #--------------------------------------------------------------
-# def perform_classification(utterance, classifier=0, dataframe=df, train_df=train_df):
-#     while True:
+def perform_classification(utterance, classifier=0, dataframe=df, train_df=train_df):
+    while True:
 
-#          # Checks if user wants to exit
-#         if utterance == 'quit':
-#             break
+         # Checks if user wants to exit
+        if utterance == 'quit':
+            break
         
-#         # Performs the chosen way of classificaiton
-#         elif classifier == 0:
-#             # First machine learning technique: Decision trees
-#             tree, vectorizer, label_encoder = CreateTree(train_df)
-#             utterance_vec = vectorizer.transform([utterance]) # DOES NOT WORK YET
-#             label_int = tree.predict(utterance_vec)
-#             label_text = label_encoder.inverse_transform(label_int)
+        # Performs the chosen way of classification
+        elif classifier == 0:
+            # First machine learning technique: Decision trees
+            tree, vectorizer, label_encoder = CreateTree(train_df)
+            utterance_vec = vectorizer.transform([utterance]) 
+            label_int = tree.predict(utterance_vec)
+            label_text = label_encoder.inverse_transform(label_int)
 
-#             return label_text
-#         else:
-#             # Second machine learning technique: K nearest neighbors (K=5)
-#             kn, vectorizer, label_encoder = CreateKNearest(dataframe)
-#             utterance_vec = vectorizer.transform([utterance])
-#             label_int = kn.predict(utterance_vec) # DOES NOT WORK YET
-#             label_text = label_encoder.inverse_transform(label_int)
+            return label_text
+        else:
+            # Second machine learning technique: K nearest neighbors (K=5)
+            kn, vectorizer, label_encoder = CreateKNearest(dataframe)
+            utterance_vec = vectorizer.transform([utterance])
+            label_int = kn.predict(utterance_vec) 
+            label_text = label_encoder.inverse_transform(label_int)
 
-#             return label_text
+            return label_text
 
 #--------------------------------------------------------------
 
@@ -127,33 +128,33 @@ def perform_classification(utterance, classifier=0):
 
 
 #--------------------------------------------------------------
-# def find_restaurant(foodtype, area, price):
-#     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode"])
+def find_restaurant(food, area, price):
+    df = pd.read_csv('./restaurants_info.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode"])
     
-#     possible_restaurants = []
+    possible_restaurants = []
 
-#     for index, row in df.iterrows():
+    for index, row in df.iterrows():
 
-#         if row['food'] == foodtype or foodtype == None:
-#             if row['area'] == area or area == None:
-#                 if row['pricerange'] == price or price == None:
-#                     possible_restaurants.append(row)
+        if row['food'] == food or food == "any":
+            if row['area'] == area or area == "any":
+                if row['pricerange'] == price or price == "any":
+                    possible_restaurants.append(row)
 
-#     return possible_restaurants
+    return possible_restaurants
 #--------------------------------------------------------------
 
 
 
-def find_restaurant(foodtype, area, price):
-    df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode"])
+# def find_restaurant(food, area, price):
+#     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode"])
     
-    # Case insensitive matching and handling None values
-    possible_restaurants = df[
-        (df['food'].str.contains(foodtype, case=False, na=False) | pd.isna(foodtype)) &
-        (df['area'].str.contains(area, case=False, na=False) | pd.isna(area)) &
-        (df['pricerange'].str.contains(price, case=False, na=False) | pd.isna(price))
-    ]
-    return possible_restaurants
+#     # Case insensitive matching and handling of missing values
+#     possible_restaurants = df[
+#         (df['food'].str.contains(food, case=False, na=False) | pd.isna(food)) &
+#         (df['area'].str.contains(area, case=False, na=False) | pd.isna(area)) &
+#         (df['pricerange'].str.contains(price, case=False, na=False) | pd.isna(price))
+#     ]
+#     return possible_restaurants
 
 
 
@@ -162,140 +163,67 @@ def find_restaurant(foodtype, area, price):
 # # # # responds to user based on dialog state and utterance classification
 # # # # extracts preferences from user utterance
 class dialogClass:
-    def __init__(self, state=None, type=None, area=None, price=None):
+    def __init__(self, state=None, food=None, area=None, price=None):
         self.state = "welcome"
-        self.type = None
+        self.food = None
         self.area = None
         self.price = None
 
     # Method to respond to the user depending on the dialog state and utterance classification
 
     #-------------------------------------------------------------------------
-    # def responder(self, utterance):
-    #     dialog_act = perform_classification(utterance)
-
-    #     print(dialog_act)
-
-    #     # WELCOME state
-    #     if self.state == 'welcome':
-    #         if dialog_act == 'hello':
-    #             response = "Hi, please respond with your preferences"
-    #             return response
-        
-    #         else:
-    #             self.state = "askfoodtype"
-                  
-    #     # ASK FOODTYPE state
-    #     if self.state == 'askfoodtype':
-    #         if self.type == None:
-    #             response = 'Hello, what type of food do you want?'
-    #             return response
-
-    #         else:
-    #             self.state = "askarea"
-        
-    #     # ASK AREA state
-    #     if self.state == 'askarea':
-    #         if self.area == None:
-    #             response = 'Hello, in which area do you want to eat (reply with north/east/south/west)?'
-    #             return response
-                
-    #         else:
-    #             self.state = "askpricerange"
-
-    #     # ASK PRICE RANGE state
-    #     if self.state == 'askpricerange':
-    #         if self.price == None:
-    #             response = 'Hello, what price range do you want?'
-    #             return response
-
-    #         else:
-    #             self.state = "recommend"
-
-    #     # RECOMMEND state (if all values are filled, recommend restaurant based on restaurant csv file)
-    #     if self.state == 'recommend':
-    #         print('yo')
-    #         pass
-    #-------------------------------------------------------------------------
-    
-    # def responder(self, utterance):
-    #     dialog_act = perform_classification(utterance)
-
-    #     if self.state == 'welcome':
-    #         if dialog_act == 'hello':
-    #             self.state = "askfoodtype"
-    #             return "Hi, please tell me what type of food you're looking for."
-
-    #     if self.state == 'askfoodtype':
-    #         if self.type is None:
-    #             self.extractor(utterance)
-    #             if self.type:
-    #                 self.state = "askarea"
-    #                 return f"Great! You want {self.type}. In which area would you like to eat (north/east/south/west)?"
-
-    #     if self.state == 'askarea':
-    #         if self.area is None:
-    #             self.extractor(utterance)
-    #             if self.area:
-    #                 self.state = "askpricerange"
-    #                 return f"Got it! In the {self.area} area. What's your price range (cheap/moderate/expensive)?"
-
-    #     if self.state == 'askpricerange':
-    #         if self.price is None:
-    #             self.extractor(utterance)
-    #             if self.price:
-    #                 self.state = "recommend"
-    #                 return "Thanks for providing all the information. Let me find the best restaurants for you."
-
-    #     if self.state == 'recommend':
-    #         restaurants = find_restaurant(self.type, self.area, self.price)
-    #         if restaurants:
-    #             return f"I found these restaurants for you: {', '.join([r['restaurantname'] for r in restaurants])}"
-    #         else:
-    #            return "Sorry, no restaurants found with those preferences."
-    #-------------------------------------------------------------------------
     def responder(self, utterance):
-        # Extract preferences from user utterance
-        food, area, price = self.extractor(utterance)
+        dialog_act = perform_classification(utterance)
 
-        if self.state == "welcome":
-            self.state = "askfoodtype"
-            return "Welcome! What type of food would you like?"
+        print(dialog_act)
 
-
-        elif self.state == "askfoodtype":
-            if self.food:
-                self.state = "askarea"
-                return f"Got it! You want {food} food. Which area would you like to dine in (north, south, east, west)?"
-            else:
-                return "Please tell me what type of food you want."
+        # WELCOME state
+        if self.state == 'welcome':
+            if dialog_act == 'hello':
+                response = "Hi, please respond with your preferences"
+                return response
         
-        elif food:
-            self.state = 'askarea'
-            return f"Got it! You want {food}. In which area would you like to eat (north, south, east, west)?"
+            else:
+                self.state = "askfoodtype"
+                  
+        # ASK FOODTYPE state
+        if self.state == 'askfoodtype':
+            if self.food == None:
+                response = 'What type of food do you want?'
+                return response
 
-        elif self.state == 'askarea' and area is None:
-            return "Which area would you like to dine in?"
-        elif area:
-            self.state = 'askpricerange'
-            return f"Great! In the {area} area. What price range are you looking for (cheap, moderate, expensive)?"
+            else:
+                self.state = "askarea"
+        
+        # ASK AREA state
+        if self.state == 'askarea':
+            if self.area == None:
+                response = f"Got it! You want {self.food} food. in which area do you want to eat (reply with north/east/south/west/centre/)?"
+                return response
+                
+            else:
+                self.state = "askpricerange"
 
-        elif self.state == 'askpricerange' and price is None:
-            return "What's your price range?"
-        elif price:
-            self.state = 'recommend'
-            return "Thanks for the details. Let me find the best restaurant for you!"
+        # ASK PRICE RANGE state
+        if self.state == 'askpricerange':
+            if self.price == None:
+                response = f'Got it! you want {self.food} in {self.area} area. What price range do you want?'
+                return response
 
+            else:
+                self.state = "recommend"
 
-
-
-    #--------------------------------------------------------------------------
-    # # IMPLEMENT: Method that extracts food type, area, price range from user utterance
-    # def extractor(self, utterance):
-    #     if True:
-    #         #self.type = "Italian"
-    #         self.area = "West"
-    # --------------------------------------------------------------------------
+        # RECOMMEND state (if all values are filled, recommend restaurant based on restaurant csv file)
+        if self.state == 'recommend':
+            restaurant_list = find_restaurant(self.food, self.area, self.price)
+            if len(restaurant_list) > 0:
+                restaurant_name = restaurant_list[0]['restaurantname']
+                response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\"'
+                if utterance == 'alternative':
+                    response = f'Another restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_list[1]["restaurantname"]}\". Enjoy your meal!' 
+            else: 
+                response = "I'm very sorry, but there are no restaurants that fit your preferences"
+            return response
 
 
 
@@ -304,83 +232,121 @@ class dialogClass:
         utterance = utterance.lower()
 
         # Define keywords for food type
-        food_keywords = {
-            'italian': 'Italian', 'chinese': 'Chinese', 'indian': 'Indian', 'british': 'British',
-            'thai': 'Thai', 'french': 'French', 'bistro': 'Bistro', 'mediterranean': 'Mediterranean',
-            'seafood': 'Seafood', 'japanese': 'Japanese', 'turkish': 'Turkish', 'romanian': 'Romanian', 
-            'steakhouse': 'Steakhouse', 'asian oriental': 'Asian Oriental', 'spanish': 'Spanish', 
-            'north american': 'North American', 'fast food': 'Fast Food', 'modern european': 'Modern European',
-            'european': 'European', 'portuguese': 'Portuguese', 'dont care': 'Dont Care', 'any': 'Any',
-            'jamaican': 'Jamaican', 'lebanese': 'Lebanese', 'gastropub': 'Gastropub', 'cuban': 'Cuban',
-            'catalan': 'Catalan', 'maroccan': 'Maroccan', 'persian': 'Persian', 'african': 'African',
-            'polynesian': 'Polynesian', 'traditional': 'Traditional', 'international': 'International',
-            'tuscan': 'Tuscan', 'australasian': 'Australasian', 'fusion': 'Fusion', 'korean': 'Korean',
-            'vietnamese': 'Vietnamese'
-        }
+        food_keywords = [
+            'italian', 'chinese', 'indian', 'british', 'thai', 'french', 'bistro', 'mediterranean',
+            'seafood', 'japanese', 'turkish', 'romanian', 'steakhouse', 'asian oriental', 'spanish',
+            'north american', 'fast food', 'modern european', 'european', 'portuguese'
+            'jamaican', 'lebanese', 'gastropub', 'cuban', 'catalan', 'maroccan', 'persian',
+            'african', 'polynesian', 'traditional', 'international', 'tuscan', 'australasian', 'fusion',
+            'korean', 'vietnamese'
+            ]
+
+
         # Define keywords for area
-        area_keywords = {
-            'north': 'North', 'south': 'South', 'east': 'East', 'west': 'West', 'center': 'Center',
-            'downtown': 'Center', 'dont care': 'Dont care', 'any': 'Any'
-        }
+        area_keywords = [
+            'north', 'south', 'east', 'west', 'centre'
+            ]
+
 
         # Define keywords for price range
-        price_keywords = {
-            'cheap': 'Cheap', 'moderate': 'Moderate', 'expensive': 'Expensive', 'dont care': 'Dont care',
-            'any': 'Any'
-        }
+        price_keywords = [
+            'cheap', 'moderate', 'expensive'
+            ]
+        
+        dontcare_keywords = [
+            'dont care', 'any', 'doesnt matter', 'whatever', 'no preference', 'anything',
+            'don\'t care', 'does not matter', 'no preference', 'no matter', 'doesn\'t matter'
+        ]
+
 
         # Extract food type
-        for keyword, food in food_keywords.items():
-            if keyword in utterance:
-                self.type = food
+        for food in food_keywords:
+            if food in utterance:
+                self.food = food
                 break
 
-    # Extract area
-        for keyword, area in area_keywords.items():
-            if keyword in utterance:
+        # Extract area
+        for area in area_keywords:
+            if area in utterance:
                 self.area = area
                 break
 
     # Extract price range
-        for keyword, price in price_keywords.items():
-            if keyword in utterance:
+        for price in price_keywords:
+            if price in utterance:
                 self.price = price
                 break
 
-    # If no preference found, set to None
-        if not self.type:
-            self.type = None
-        if not self.area:
-            self.area = None
-        if not self.price:
-            self.price = None
 
-        return self.type, self.area, self.price
 
-    def advanced_extractor(self, utterance):
-        utterance = utterance.lower()
+        # Extract dontcare; this doesn't work yet
+        for dontcare in dontcare_keywords:
+            if dontcare in utterance:
+                utterance_split = utterance.split(' ')  #let op komma's en punten
+                dontcare_split = dontcare.split(' ')
+                i = utterance_split.index(dontcare_split[0])
+                for word in utterance_split[i:]:
+                    if word == 'food':
+                        self.food = 'any'
+                        break
+                    elif word == 'area':
+                        self.area = 'any'
+                        break
+                    elif word == 'price':
+                        self.price = 'any'
+                        break                       
+                                    
+                    else: 
+                        if self.state == 'askfoodtype':
+                            self.food = 'any'
+                            break
+                        elif self.state == 'askarea':
+                            self.area = 'any'
+                            break
+                        elif self.state == 'askpricerange':
+                            self.price = 'any'
+                            break
+                        break
+                    
 
-        # Regular expressions for matching patterns (more needed)
-        food_regex = r"(italian|chinese|indian|british|thai|french|bistro|mediterranean|seafood|korean|vietnamese|japanese|turkish|romanian|steakhouse|asian oriental|spanish|north american|fast food|modern european|european|portuguese|dont care|any|jamaican|lebanese|gastropub|cuban|catalan|maroccan|thai|turkish|persian|african|polynesian|traditional|international|tuscan|australasian|fusion)"
-        area_regex = r"(north|south|east|west|center|downtown|dont care|any)"
-        price_regex = r"(cheap|moderate|expensive|dont care|any)"
-    
-        # Search for food type
-        food_match = re.search(food_regex, utterance)
-        if food_match:
-            self.food = food_match.group(0).capitalize()
+                # hier moet nog wat bij dit gaat niet werken als er geen food, area of price in de zin staat
+                # als dit zo is moeten we aan de hand van de state aanpassen wat we naar "any" veranderen.
+                # stel dat self.state == "askfoodtype" dan moet self.food = "any" zijn
 
-        # Search for area
-        area_match = re.search(area_regex, utterance)
-        if area_match:
-            self.area = area_match.group(0).capitalize()
+                break
 
-        # Search for price range
-        price_match = re.search(price_regex, utterance)
-        if price_match:
-            self.price = price_match.group(0).capitalize()
+        
+
+
 
         return self.food, self.area, self.price
+
+    # def advanced_extractor(self, utterance):
+    #     utterance = utterance.lower()
+
+    #     # Regular expressions for matching patterns (more needed)
+    #     food_regex = r"(italian|chinese|indian|british|thai|french|bistro|mediterranean|seafood|korean|vietnamese|japanese|turkish|romanian|steakhouse|asian oriental|spanish|north american|fast food|modern european|european|portuguese|dont care|any|jamaican|lebanese|gastropub|cuban|catalan|maroccan|thai|turkish|persian|african|polynesian|traditional|international|tuscan|australasian|fusion)"
+    #     area_regex = r"(north|south|east|west|center|downtown)"
+    #     price_regex = r"(cheap|moderate|expensive)"
+
+    #     dontcare_words = r"(food|area|price)"
+    
+    #     # Search for food type
+    #     food_match = re.search(food_regex, utterance)
+    #     if food_match:
+    #         self.food = food_match.group(0)
+
+    #     # Search for area
+    #     area_match = re.search(area_regex, utterance)
+    #     if area_match:
+    #         self.area = area_match.group(0)
+
+    #     # Search for price range
+    #     price_match = re.search(price_regex, utterance)
+    #     if price_match:
+    #         self.price = price_match.group(0)
+
+    #     return self.food, self.area, self.price
         
 
 def main():
@@ -393,6 +359,7 @@ def main():
         dialog.extractor(utterance)
         response = dialog.responder(utterance)
         print('system: ', response)
+
 
     
 
