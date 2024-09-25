@@ -163,11 +163,13 @@ def find_restaurant(food, area, price):
 # # # # responds to user based on dialog state and utterance classification
 # # # # extracts preferences from user utterance
 class dialogClass:
-    def __init__(self, state=None, food=None, area=None, price=None):
+    def __init__(self, state=None, food=None, area=None, price=None, possible_restaurants=None, terminate=None):
         self.state = "welcome"
         self.food = None
         self.area = None
         self.price = None
+        self.possible_restaurants = None
+        self.terminate = 0
 
     # Method to respond to the user depending on the dialog state and utterance classification
 
@@ -215,15 +217,49 @@ class dialogClass:
 
         # RECOMMEND state (if all values are filled, recommend restaurant based on restaurant csv file)
         if self.state == 'recommend':
-            restaurant_list = find_restaurant(self.food, self.area, self.price)
-            if len(restaurant_list) > 0:
-                restaurant_name = restaurant_list[0]['restaurantname']
-                response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\"'
-                if utterance == 'alternative':
-                    response = f'Another restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_list[1]["restaurantname"]}\". Enjoy your meal!' 
-            else: 
-                response = "I'm very sorry, but there are no restaurants that fit your preferences"
-            return response
+            
+            if self.possible_restaurants == None:
+                self.possible_restaurants = find_restaurant(self.food, self.area, self.price)
+                if len(self.possible_restaurants) > 0:
+                    restaurant_row = self.possible_restaurants.pop(0)
+                    restaurant_name = restaurant_row['restaurantname']
+                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\"'
+                else: 
+                    response = "I'm very sorry, but there are no restaurants that fit your preferences, would you like to start over?"
+            
+            else:
+                if dialog_act == "reqalts" or utterance == "alternative":
+                    self.state = "recommendalt"
+                else:
+                    self.state = "startover"
+        
+        # RECOMMEND ALTERNATIVE state (Keeps looping if user wants another recommendation, otherwises transitions to STARTOVER state)
+        if self.state == "recommendalt":
+            if dialog_act == "reqalts" or utterance == "alternative":
+                if len(self.possible_restaurants) > 0:
+                    restaurant_row = self.possible_restaurants.pop(0)
+                    restaurant_name = restaurant_row['restaurantname']
+                    response = f"An alternative restaurant could be {restaurant_name}. If you would you like an alternative, type \"alternative\"?"
+                else:
+                    response = "I'm very sorry, but there are no alternative restaurants that fit your preferences, would you like to start over?"
+            else:
+                    self.state = "startover"
+        
+        # STARTOVER state (Checks if user wants to terminate system or if they want a new recommendation)
+        if self.state == "startover":
+            if utterance in ["yes", "y", "yeah"]:
+                self.state = "welcome"
+                self.food = None
+                self.area = None
+                self.price = None
+                self.possible_restaurants = None
+                response = "Alright we will start over, what are your new preferences?"
+            else:
+                self.terminate = 1
+                response = "Ok, bye then"
+        
+        return response
+
 
 
 
@@ -354,7 +390,7 @@ def main():
     dialog = dialogClass()
     print('system: Hello , welcome to the MAIR restaurant system? You can ask for restaurants by area , price range or food type . How may I help you?')
 
-    while True:
+    while dialog.terminate == 0:
         utterance = input('user: ')
         dialog.extractor(utterance)
         response = dialog.responder(utterance)
