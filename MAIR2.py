@@ -162,6 +162,11 @@ def find_restaurant(food, area, price):
 # # # # stores dialog state, food type, area, price range
 # # # # responds to user based on dialog state and utterance classification
 # # # # extracts preferences from user utterance
+
+# Things to add:
+# Recognize keywords based on the keywords FOOD/AREA/PRICE when no exact keywords are found and then proceed to use leventein distance or whatever.
+# e.g. I’m looking for ItaliEn food → ItaliEn is the food type based on pattern {variable} food. ItaliEn is one leventein distance away from Italian -> keyword should be Italian.
+
 class dialogClass:
     def __init__(self, state=None, food=None, area=None, price=None, possible_restaurants=None, terminate=None):
         self.state = "welcome"
@@ -200,7 +205,7 @@ class dialogClass:
         # ASK AREA state
         if self.state == 'askarea':
             if self.area == None:
-                response = f"Got it! You want {self.food} food. in which area do you want to eat (reply with north/east/south/west/centre/)?"
+                response = f"Got it! You want {self.food} food. in which area do you want to eat (reply with north/east/south/west/centre)?"
                 return response
                 
             else:
@@ -223,7 +228,7 @@ class dialogClass:
                 if len(self.possible_restaurants) > 0:
                     restaurant_row = self.possible_restaurants.pop(0)
                     restaurant_name = restaurant_row['restaurantname']
-                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\"'
+                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\", otherwise type \"restart\" to start over.'
                 else: 
                     response = "I'm very sorry, but there are no restaurants that fit your preferences, would you like to start over?"
             
@@ -247,7 +252,7 @@ class dialogClass:
         
         # STARTOVER state (Checks if user wants to terminate system or if they want a new recommendation)
         if self.state == "startover":
-            if utterance in ["yes", "y", "yeah"]:
+            if utterance in ["yes", "y", "yeah", "startover", "start over", "restart"]:
                 self.state = "welcome"
                 self.food = None
                 self.area = None
@@ -315,7 +320,7 @@ class dialogClass:
 
 
 
-        # Extract dontcare; this doesn't work yet
+        # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
             if dontcare in utterance:
                 utterance_split = utterance.split(' ')  #let op komma's en punten
@@ -343,17 +348,8 @@ class dialogClass:
                             self.price = 'any'
                             break
                         break
-                    
-
-                # hier moet nog wat bij dit gaat niet werken als er geen food, area of price in de zin staat
-                # als dit zo is moeten we aan de hand van de state aanpassen wat we naar "any" veranderen.
-                # stel dat self.state == "askfoodtype" dan moet self.food = "any" zijn
-
+            
                 break
-
-        
-
-
 
         return self.food, self.area, self.price
 
