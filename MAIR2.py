@@ -6,21 +6,11 @@ from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
-import re
-
+from Levenshtein import ratio
 
 # Opens the dataframe
-# df = pd.read_csv('./dialog_acts.dat', names=['dialog_act','utterance_content'])
-# df[['dialog_act','utterance_content']] = df["dialog_act"].str.split(" ", n=1, expand=True)
-
 df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
 df[['dialog_act', 'utterance_content']] = df['dialog_act'].str.split(' ', n=1, expand=True)
-
-# dialog_df = pd.read_csv('./all_dialogs.txt', sep='\n', header=None)
-# dialog_df.columns = ['dialog']
-# # Optionally, you can parse dialog turns and separate out user and system utterances
-# dialog_df[['user', 'system']] = dialog_df['dialog'].str.split('\t', expand=True)
-
 
 # Split the full dataset in a training part of 85% and a test part of 15%.
 train_df, test_df = train_test_split(df, test_size=0.15, random_state=0)
@@ -45,7 +35,6 @@ def CreateTree(df=train_df, target_column='dialog_act', feature_column='utteranc
     clf.fit(features_encoded, target_encoded)
 
     return clf, vectorizer, label_encoder
-
 
 
 def CreateKNearest(train_df=train_df, target_column='dialog_act', feature_column='utterance_content'):
@@ -97,29 +86,23 @@ kn, vectorizer_kn, label_encoder_kn = CreateKNearest(train_df)
 #         return label_text[0]
 #--------------------------------------------------------------
 def perform_classification(utterance, classifier=0, dataframe=df, train_df=train_df):
-    while True:
+    # Performs the chosen way of classification
+    if classifier == 0:
+        # First machine learning technique: Decision trees
+        tree, vectorizer, label_encoder = CreateTree(train_df)
+        utterance_vec = vectorizer.transform([utterance]) 
+        label_int = tree.predict(utterance_vec)
+        label_text = label_encoder.inverse_transform(label_int)
 
-         # Checks if user wants to exit
-        if utterance == 'quit':
-            break
-        
-        # Performs the chosen way of classification
-        elif classifier == 0:
-            # First machine learning technique: Decision trees
-            tree, vectorizer, label_encoder = CreateTree(train_df)
-            utterance_vec = vectorizer.transform([utterance]) 
-            label_int = tree.predict(utterance_vec)
-            label_text = label_encoder.inverse_transform(label_int)
+        return label_text
+    else:
+        # Second machine learning technique: K nearest neighbors (K=5)
+        kn, vectorizer, label_encoder = CreateKNearest(dataframe)
+        utterance_vec = vectorizer.transform([utterance])
+        label_int = kn.predict(utterance_vec) 
+        label_text = label_encoder.inverse_transform(label_int)
 
-            return label_text
-        else:
-            # Second machine learning technique: K nearest neighbors (K=5)
-            kn, vectorizer, label_encoder = CreateKNearest(dataframe)
-            utterance_vec = vectorizer.transform([utterance])
-            label_int = kn.predict(utterance_vec) 
-            label_text = label_encoder.inverse_transform(label_int)
-
-            return label_text
+        return label_text
 
 #--------------------------------------------------------------
 
@@ -173,6 +156,10 @@ class dialogClass:
         self.food = None
         self.area = None
         self.price = None
+        self.askfood = None
+        self.askarea = None
+        self.askprice = None
+        self.cutoff = 0.8
         self.possible_restaurants = None
         self.terminate = 0
 
@@ -187,25 +174,34 @@ class dialogClass:
         # WELCOME state
         if self.state == 'welcome':
             if dialog_act == 'hello':
-                response = "Hi, please respond with your preferences"
+                response = "Hi, please respond with your preferences."
                 return response
         
             else:
                 self.state = "askfoodtype"
                   
         # ASK FOODTYPE state
-        if self.state == 'askfoodtype':
-            if self.food == None:
+        # WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
+# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
+# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
+# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
+# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
+            if self.food == None and self.askfood == None: # First try
                 response = 'What type of food do you want?'
                 return response
-
-            else:
+            elif self.food == None and self.askfood =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+                response = 'Preference not recognized, please give an alternative.'
+                return response
+            elif self.food != None and self.askfood =="Found": # When input is not recognized but levenshtein found a possibile answer.
+                response = f'Did you mean {self.food}?'
+                return response
+            elif self.food != None and self.askfood =="Checked": # When input is found and checked go to ask area.
                 self.state = "askarea"
         
         # ASK AREA state
         if self.state == 'askarea':
             if self.area == None:
-                response = f"Got it! You want {self.food} food. in which area do you want to eat (reply with north/east/south/west/centre)?"
+                response = f"Got it! You want {self.food} food. In which area do you want to eat (reply with north/east/south/west/centre)?"
                 return response
                 
             else:
@@ -271,6 +267,7 @@ class dialogClass:
     def extractor(self, utterance):
         # Lowercase the utterance for case-insensitive matching
         utterance = utterance.lower()
+        dialog_act = perform_classification(utterance) # Kan efficienter
 
         # Define keywords for food type
         food_keywords = [
@@ -299,12 +296,32 @@ class dialogClass:
             'don\'t care', 'does not matter', 'no preference', 'no matter', 'doesn\'t matter'
         ]
 
-
+        if self.askfood == "Found":
+            if dialog_act == ["negate"]:
+                self.food = None
+                self.askfood = None
+                return
+            elif dialog_act == ["affirm"]:
+                self.askfood = "Checked"
+                return
+        
         # Extract food type
         for food in food_keywords:
             if food in utterance:
                 self.food = food
+                self.askfood = "Checked"
                 break
+            else: #levenshtein
+                utterance_split = utterance.split(' ')
+                for word in utterance_split:
+                    if ratio(word, food) > self.cutoff: #maybe we should use a different cutoff for food/area/price
+                        self.food = food
+                        self.askfood = "Found"
+                    break
+        
+        if self.askfood == None:
+            print('test')
+            self.askfood = "Not Found"       
 
         # Extract area
         for area in area_keywords:
@@ -312,13 +329,11 @@ class dialogClass:
                 self.area = area
                 break
 
-    # Extract price range
+         # Extract price range
         for price in price_keywords:
             if price in utterance:
                 self.price = price
                 break
-
-
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
@@ -351,50 +366,17 @@ class dialogClass:
             
                 break
 
-        return self.food, self.area, self.price
-
-    # def advanced_extractor(self, utterance):
-    #     utterance = utterance.lower()
-
-    #     # Regular expressions for matching patterns (more needed)
-    #     food_regex = r"(italian|chinese|indian|british|thai|french|bistro|mediterranean|seafood|korean|vietnamese|japanese|turkish|romanian|steakhouse|asian oriental|spanish|north american|fast food|modern european|european|portuguese|dont care|any|jamaican|lebanese|gastropub|cuban|catalan|maroccan|thai|turkish|persian|african|polynesian|traditional|international|tuscan|australasian|fusion)"
-    #     area_regex = r"(north|south|east|west|center|downtown)"
-    #     price_regex = r"(cheap|moderate|expensive)"
-
-    #     dontcare_words = r"(food|area|price)"
-    
-    #     # Search for food type
-    #     food_match = re.search(food_regex, utterance)
-    #     if food_match:
-    #         self.food = food_match.group(0)
-
-    #     # Search for area
-    #     area_match = re.search(area_regex, utterance)
-    #     if area_match:
-    #         self.area = area_match.group(0)
-
-    #     # Search for price range
-    #     price_match = re.search(price_regex, utterance)
-    #     if price_match:
-    #         self.price = price_match.group(0)
-
-    #     return self.food, self.area, self.price
-        
+        return
 
 def main():
-
     dialog = dialogClass()
-    print('system: Hello , welcome to the MAIR restaurant system? You can ask for restaurants by area , price range or food type . How may I help you?')
+    print('system: Hello, welcome to the greatest MAIR restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?')
 
     while dialog.terminate == 0:
         utterance = input('user: ')
         dialog.extractor(utterance)
         response = dialog.responder(utterance)
         print('system: ', response)
-
-
-    
-
 
 if __name__ == '__main__':
     main()
