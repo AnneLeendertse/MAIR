@@ -112,7 +112,7 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
 #--------------------------------------------------------------
 def find_restaurant(food, area, price):
-    df = pd.read_csv('./restaurants_info.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode"])
+    df = pd.read_csv('./restaurants_info_with_attributes.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode","food_quality","crowdedness","length_of_stay"])
     
     possible_restaurants = []
 
@@ -129,7 +129,7 @@ def find_restaurant(food, area, price):
 
 
 # def find_restaurant(food, area, price):
-#     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode"])
+#     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode", "food_quality", "crowdedness", "length_of_stay"])
     
 #     # Case insensitive matching and handling of missing values
 #     possible_restaurants = df[
@@ -248,7 +248,7 @@ class dialogClass:
         
         # STARTOVER state (Checks if user wants to terminate system or if they want a new recommendation)
         if self.state == "startover":
-            if utterance in ["yes", "y", "yeah", "startover", "start over", "restart"]:
+            if utterance in ["yes", "y", "yeah", "startover", "start over", "restart", "please", "sure"]:
                 self.state = "welcome"
                 self.food = None
                 self.area = None
@@ -373,7 +373,7 @@ def main():
     print('system: Hello, welcome to the greatest MAIR restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?')
 
     while dialog.terminate == 0:
-        utterance = input('user: ')
+        utterance = input('user: ').replace('?', '').replace('!', '').replace('.', '').replace(',', '').lower() #to remove punctuation. I don't know if lower() is necessary (or maybe only here)
         dialog.extractor(utterance)
         response = dialog.responder(utterance)
         print('system: ', response)
