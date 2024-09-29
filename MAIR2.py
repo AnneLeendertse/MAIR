@@ -106,9 +106,8 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
 #--------------------------------------------------------------
 
-# Function that finds possible restaurants in restaurants_info.csv based on food type, area and price range 
+# Function that finds possible restaurants in restaurants_info_with_attributes.csv based on food type, area and price range
 # and returns list of the entire row of restaurant info from the dataframe
-
 
 #--------------------------------------------------------------
 def find_restaurant(food, area, price):
@@ -125,8 +124,6 @@ def find_restaurant(food, area, price):
 
     return possible_restaurants
 #--------------------------------------------------------------
-
-
 
 # def find_restaurant(food, area, price):
 #     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode", "food_quality", "crowdedness", "length_of_stay"])
@@ -176,21 +173,15 @@ class dialogClass:
             if dialog_act == 'hello':
                 response = "Hi, please respond with your preferences."
                 return response
-        
             else:
                 self.state = "askfoodtype"
                   
         # ASK FOODTYPE state
-        # WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
-# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
-# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
-# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
-# WE STILL NEED COPY THIS ARCHITECTURE TO THE REST OF THE STATES !!! 
             if self.food == None and self.askfood == None: # First try
                 response = 'What type of food do you want?'
                 return response
             elif self.food == None and self.askfood =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
-                response = 'Preference not recognized, please give an alternative.'
+                response = 'Preference for food not recognized, please give an alternative.'
                 return response
             elif self.food != None and self.askfood =="Found": # When input is not recognized but levenshtein found a possibile answer.
                 response = f'Did you mean {self.food}?'
@@ -200,25 +191,33 @@ class dialogClass:
         
         # ASK AREA state
         if self.state == 'askarea':
-            if self.area == None:
+            if self.area == None and self.askarea == None:
                 response = f"Got it! You want {self.food} food. In which area do you want to eat (reply with north/east/south/west/centre)?"
                 return response
-                
-            else:
+            elif self.area == None and self.askarea =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+                response = 'Preference for area not recognized, please give an alternative.'
+                return response
+            elif self.area != None and self.askarea =="Found": # When input is not recognized but levenshtein found a possibile answer.
+                response = f'Did you mean {self.area}?'
+                return response
+            elif self.area != None and self.askarea =="Checked": # When input is found and checked go to ask area.
                 self.state = "askpricerange"
 
         # ASK PRICE RANGE state
         if self.state == 'askpricerange':
-            if self.price == None:
-                response = f'Got it! you want {self.food} in {self.area} area. What price range do you want?'
+            if self.price == None and self.askprice == None:
+                response = f'Got it! you want {self.food} in {self.area} area. What price range do you want?' 
+            elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+                response = 'Preference for price not recognized, please give an alternative.'
                 return response
-
-            else:
+            elif self.price != None and self.askprice =="Found": # When input is not recognized but levenshtein found a possibile answer.
+                response = f'Did you mean {self.price}?'
+                return response
+            elif self.price != None and self.askprice =="Checked": # When input is found and checked go to ask area.
                 self.state = "recommend"
 
         # RECOMMEND state (if all values are filled, recommend restaurant based on restaurant csv file)
         if self.state == 'recommend':
-            
             if self.possible_restaurants == None:
                 self.possible_restaurants = find_restaurant(self.food, self.area, self.price)
                 if len(self.possible_restaurants) > 0:
@@ -227,7 +226,6 @@ class dialogClass:
                     response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\", otherwise type \"restart\" to start over.'
                 else: 
                     response = "I'm very sorry, but there are no restaurants that fit your preferences, would you like to start over?"
-            
             else:
                 if dialog_act == "reqalts" or utterance == "alternative":
                     self.state = "recommendalt"
@@ -261,8 +259,58 @@ class dialogClass:
         
         return response
 
+    # Check for the asktype
+    def asktype_check(self,type, asktype, dialog=dialog_act):
+        if asktype == "Found":
+            if dialog == ["negate"]:
+                type = None
+                asktype = None
+                return
+            elif dialog == ["affirm"]:
+                asktype = "Checked"
+                return 
 
+       
+    # Method to extract type (food/area/price) from utterance and apply Levenshtein 
+    def extract_type(self, type, asktype, dialog_act=dialog_act, utterance=utterance):
+        if asktype == "Found":
+            if dialog_act == ["negate"]:
+                type = None
+                asktype = None
+                return
+            elif dialog_act == ["affirm"]:
+                asktype = "Checked"
+                return
+        
+        # Extract food type
+        for word in keywords:
+            if word in utterance:
+                type = word
+                asktype = "Checked"
+                break
+            else: #levenshtein
+                utterance_split = utterance.split(' ')
+                for word in utterance_split:
+                    if ratio(word, food) > self.cutoff: #maybe we should use a different cutoff for food/area/price
+                        self.food = food
+                        self.askfood = "Found"
+                    break
+        
+        if self.askfood == None:
+            print('test: if self.askfood == None:')
+            self.askfood = "Not Found"       
 
+        # Extract area
+        for area in area_keywords:
+            if area in utterance:
+                self.area = area
+                break
+
+         # Extract price range
+        for price in price_keywords:
+            if price in utterance:
+                self.price = price
+                break
 
     def extractor(self, utterance):
         # Lowercase the utterance for case-insensitive matching
@@ -296,14 +344,11 @@ class dialogClass:
             'don\'t care', 'does not matter', 'no preference', 'no matter', 'doesn\'t matter'
         ]
 
-        if self.askfood == "Found":
-            if dialog_act == ["negate"]:
-                self.food = None
-                self.askfood = None
-                return
-            elif dialog_act == ["affirm"]:
-                self.askfood = "Checked"
-                return
+        # Checks whether a Levenshtein suggestion was made and accepted by the user for food, area and price. 
+        self.asktype_check(self.food,self.askfood,dialog_act)
+        self.asktype_check(self.area,self.askarea,dialog_act)
+        self.asktype_check(self.price,self.askprice,dialog_act)
+
         
         # Extract food type
         for food in food_keywords:
@@ -320,7 +365,7 @@ class dialogClass:
                     break
         
         if self.askfood == None:
-            print('test')
+            print('test: if self.askfood == None:')
             self.askfood = "Not Found"       
 
         # Extract area
@@ -363,14 +408,13 @@ class dialogClass:
                             self.price = 'any'
                             break
                         break
-            
                 break
-
         return
+
 
 def main():
     dialog = dialogClass()
-    print('system: Hello, welcome to the greatest MAIR restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?')
+    print('system: Hello, welcome to the greatest MAIR restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?')
 
     while dialog.terminate == 0:
         utterance = input('user: ').replace('?', '').replace('!', '').replace('.', '').replace(',', '').lower() #to remove punctuation. I don't know if lower() is necessary (or maybe only here)
