@@ -260,7 +260,7 @@ class dialogClass:
         return response
 
     # Check for the asktype
-    def asktype_check(self,type, asktype, dialog=dialog_act):
+    def asktype_check(self,type, asktype, dialog):
         if asktype == "Found":
             if dialog == ["negate"]:
                 type = None
@@ -272,45 +272,24 @@ class dialogClass:
 
        
     # Method to extract type (food/area/price) from utterance and apply Levenshtein 
-    def extract_type(self, type, asktype, dialog_act=dialog_act, utterance=utterance):
-        if asktype == "Found":
-            if dialog_act == ["negate"]:
-                type = None
-                asktype = None
-                return
-            elif dialog_act == ["affirm"]:
-                asktype = "Checked"
-                return
-        
-        # Extract food type
-        for word in keywords:
-            if word in utterance:
-                type = word
+    def extract_type(self, type, asktype, keywords, cutoff, f_utterance):
+    # Extract food/area/price type
+        for f_type in keywords:
+            if f_type in f_utterance:
+                type = f_type
                 asktype = "Checked"
                 break
             else: #levenshtein
-                utterance_split = utterance.split(' ')
+                utterance_split = f_utterance.split(' ')
                 for word in utterance_split:
-                    if ratio(word, food) > self.cutoff: #maybe we should use a different cutoff for food/area/price
-                        self.food = food
-                        self.askfood = "Found"
+                    if ratio(word, f_type) > cutoff:
+                        type = f_type
+                        asktype = "Found"
                     break
         
-        if self.askfood == None:
-            print('test: if self.askfood == None:')
-            self.askfood = "Not Found"       
-
-        # Extract area
-        for area in area_keywords:
-            if area in utterance:
-                self.area = area
-                break
-
-         # Extract price range
-        for price in price_keywords:
-            if price in utterance:
-                self.price = price
-                break
+        if asktype == None:
+            print(f'test: if {asktype} == None:')
+            asktype = "Not Found"
 
     def extractor(self, utterance):
         # Lowercase the utterance for case-insensitive matching
@@ -348,37 +327,13 @@ class dialogClass:
         self.asktype_check(self.food,self.askfood,dialog_act)
         self.asktype_check(self.area,self.askarea,dialog_act)
         self.asktype_check(self.price,self.askprice,dialog_act)
-
-        
+ 
         # Extract food type
-        for food in food_keywords:
-            if food in utterance:
-                self.food = food
-                self.askfood = "Checked"
-                break
-            else: #levenshtein
-                utterance_split = utterance.split(' ')
-                for word in utterance_split:
-                    if ratio(word, food) > self.cutoff: #maybe we should use a different cutoff for food/area/price
-                        self.food = food
-                        self.askfood = "Found"
-                    break
-        
-        if self.askfood == None:
-            print('test: if self.askfood == None:')
-            self.askfood = "Not Found"       
-
-        # Extract area
-        for area in area_keywords:
-            if area in utterance:
-                self.area = area
-                break
-
-         # Extract price range
-        for price in price_keywords:
-            if price in utterance:
-                self.price = price
-                break
+        self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)
+        # Extract area type
+        self.extract_type(self.area,self.askarea,area_keywords,0.9,utterance)
+        # Extract price type
+        self.extract_type(self.price,self.askprice,price_keywords,0.8,utterance)
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
