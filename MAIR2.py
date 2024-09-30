@@ -123,20 +123,54 @@ def find_restaurant(food, area, price):
                     possible_restaurants.append(row)
 
     return possible_restaurants
-#--------------------------------------------------------------
-
-# def find_restaurant(food, area, price):
-#     df = pd.read_csv('./restaurants_info.csv', names=["restaurantname", "pricerange", "area", "food", "phone", "addr", "postcode", "food_quality", "crowdedness", "length_of_stay"])
-    
-#     # Case insensitive matching and handling of missing values
-#     possible_restaurants = df[
-#         (df['food'].str.contains(food, case=False, na=False) | pd.isna(food)) &
-#         (df['area'].str.contains(area, case=False, na=False) | pd.isna(area)) &
-#         (df['pricerange'].str.contains(price, case=False, na=False) | pd.isna(price))
-#     ]
-#     return possible_restaurants
 
 
+# Small function that removes pd.Series duplictates from a list
+def remove_duplicate_series(series_list):
+   unique_list = []
+   for series in series_list:
+       if not any(series.equals(unique_series) for unique_series in unique_list):
+           unique_list.append(series)
+   return unique_list
+
+
+# Function that applies different rules to see if a restaurant fits the additional preferences
+# Additional pref can be: "TOURISTIC", "NO ASSIGNED SEATS", "CHILDREN", "ROMANTIC"
+def reasoning(possible_restaurants, additional_pref):
+   new_possible_restaurants = []
+
+
+   for restaurant_row in possible_restaurants:
+       # Checks which of the possible restaurants is TOURISTIC
+       if "TOURISTIC" in additional_pref:
+           if restaurant_row['food'] == 'romanian':
+               pass
+           elif restaurant_row['pricerange'] == 'cheap' and restaurant_row['food_quality'] == 'good':
+               new_possible_restaurants.append(restaurant_row)
+
+
+       # Checks which of the possible restaurants has ASSIGNED SEATS
+       if "NO ASSIGNED SEATS" in additional_pref:
+           if restaurant_row['crowdedness'] != 'busy':
+               new_possible_restaurants.append(restaurant_row)
+      
+       # Checks which of the possible restaurants welcomes CHILDREN
+       if "CHILDREN" in additional_pref:
+           if restaurant_row['length_of_stay'] != 'long':
+               new_possible_restaurants.append(restaurant_row)
+      
+       # Checks which of the possible restaurants is ROMANTIC
+       if "ROMANTIC" in additional_pref:
+           if restaurant_row['crowdedness'] == 'busy':
+               pass
+           elif restaurant_row['length_of_stay'] == 'long':
+               new_possible_restaurants.append(restaurant_row)
+
+
+   new_possible_restaurants = remove_duplicate_series(new_possible_restaurants)
+
+
+   return new_possible_restaurants
 
 # Class that:
 # # # # stores dialog state, food type, area, price range
@@ -174,10 +208,10 @@ class dialogClass:
                 response = "Hi, please respond with your preferences."
                 return response
             else:
-                self.state = "askfoodtype"
+                self.state = "askfood"
                   
         # ASK FOODTYPE state
-        if self.state == "askfoodtype":
+        if self.state == "askfood":
             if self.food == None and self.askfood == None: # First try
                 response = 'What type of food do you want?'
                 return response
@@ -202,12 +236,12 @@ class dialogClass:
                 response = f'Did you mean {self.area}?'
                 return response
             elif self.area != None and self.askarea =="Checked": # When input is found and checked go to ask area.
-                self.state = "askpricerange"
+                self.state = "askprice"
 
         # ASK PRICE RANGE state
-        if self.state == 'askpricerange':
+        if self.state == 'askprice':
             if self.price == None and self.askprice == None:
-                response = f'Got it! you want {self.food} in {self.area} area. What price range do you want?' 
+                response = f'Got it! you want {self.food} food in {self.area} area. What price range do you want?' 
                 return response
             elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
                 response = 'Preference for price not recognized, please give an alternative.'
@@ -249,11 +283,10 @@ class dialogClass:
         # STARTOVER state (Checks if user wants to terminate system or if they want a new recommendation)
         if self.state == "startover":
             if utterance in ["yes", "y", "yeah", "startover", "start over", "restart", "please", "sure"]:
+                for attr in vars(self):
+                    if attr != "terminate": # Resets all variables to None except terminate 
+                        setattr(self, attr, None)
                 self.state = "welcome"
-                self.food = None
-                self.area = None
-                self.price = None
-                self.possible_restaurants = None
                 response = "Alright we will start over, what are your new preferences?"
             else:
                 self.terminate = 1
@@ -302,7 +335,7 @@ class dialogClass:
                         setattr(self, f'ask{attr_type}', "Found")
                         break
 
-        if getattr(self, f'ask{attr_type}') is None:
+        if self.state == f'ask{attr_type}' and getattr(self, f'ask{attr_type}') is None:
             setattr(self, f'ask{attr_type}', "Not Found")
 
     def extractor(self, utterance):
@@ -365,13 +398,13 @@ class dialogClass:
                         break                       
                                     
                     else: 
-                        if self.state == 'askfoodtype':
+                        if self.state == 'askfood':
                             self.food = 'any'
                             break
                         elif self.state == 'askarea':
                             self.area = 'any'
                             break
-                        elif self.state == 'askpricerange':
+                        elif self.state == 'askprice':
                             self.price = 'any'
                             break
                         break
