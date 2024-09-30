@@ -262,39 +262,48 @@ class dialogClass:
         return response
 
     # Check for the asktype
-    def asktype_check(self,type, asktype, dialog):
-        if asktype == "Found":
+    def asktype_check(self, dialog):
+        # Check in case Food is found (using levenshtein)
+        if self.askfood == "Found":
             if dialog == ["negate"]:
-                type = None
-                asktype = None
-                return
+                self.food = None
+                self.askfood = None
             elif dialog == ["affirm"]:
-                asktype = "Checked"
-                return 
+                self.askfood = "Checked"
+        # Check in case Area is found (using levenshtein)
+        if self.askarea == "Found": 
+            if dialog == ["negate"]:
+                self.area = None
+                self.askarea = None
+            elif dialog == ["affirm"]:
+                self.askarea = "Checked"
+        # Check in case Price is found (using levenshtein)
+        if self.askprice == "Found":
+            if dialog == ["negate"]:
+                self.price = None
+                self.askprice = None
+            elif dialog == ["affirm"]:
+                self.askprice = "Checked"
 
        
     # Method to extract type (food/area/price) from utterance and apply Levenshtein 
-    def extract_type(self, type, asktype, keywords, cutoff, f_utterance):
-    # Extract food/area/price type
+    def extract_type(self, keywords, cutoff, f_utterance, attr_type):
+        # Extract food/area/price type
         for f_type in keywords:
             if f_type in f_utterance:
-                type = f_type
-                asktype = "Checked"
+                setattr(self, attr_type, f_type)
+                setattr(self, f'ask{attr_type}', "Checked")
                 break
-            else: #levenshtein
+            else:  # levenshtein
                 utterance_split = f_utterance.split(' ')
                 for word in utterance_split:
-                    print(ratio(word, f_type))
-                    print(f_type)
                     if ratio(word, f_type) > cutoff:
-                        type = f_type
-                        asktype = "Found"
+                        setattr(self, attr_type, f_type)
+                        setattr(self, f'ask{attr_type}', "Found")
                         break
-                    break
-        
-        if asktype == None:
-            print(f'test: if asktype:{asktype} == None:')
-            asktype = "Not Found"
+
+        if getattr(self, f'ask{attr_type}') is None:
+            setattr(self, f'ask{attr_type}', "Not Found")
 
     def extractor(self, utterance):
         # Lowercase the utterance for case-insensitive matching
@@ -329,22 +338,14 @@ class dialogClass:
         ]
 
         # Checks whether a Levenshtein suggestion was made and accepted by the user for food, area and price. 
-        self.asktype_check(self.food,self.askfood,dialog_act)
-        print("1. self.asktype_check(self.food,self.askfood,dialog_act)")
-        self.asktype_check(self.area,self.askarea,dialog_act)
-        print("2. self.asktype_check(self.food,self.askfood,dialog_act)")
-        self.asktype_check(self.price,self.askprice,dialog_act)
-        print("3. self.asktype_check(self.food,self.askfood,dialog_act)")
+        self.asktype_check(dialog_act)
+
  
         # Extract food type
-        self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)
-        print("1. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
-        # Extract area type
-        self.extract_type(self.area,self.askarea,area_keywords,0.9,utterance)
-        print("2. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
-        # Extract price type
-        self.extract_type(self.price,self.askprice,price_keywords,0.8,utterance)
-        print("3. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
+        self.extract_type(food_keywords, 0.8, utterance, 'food')
+        self.extract_type(area_keywords, 0.9, utterance, 'area')
+        self.extract_type(price_keywords, 0.8, utterance, 'price')
+
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
