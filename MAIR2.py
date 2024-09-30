@@ -177,6 +177,7 @@ class dialogClass:
                 self.state = "askfoodtype"
                   
         # ASK FOODTYPE state
+        if self.state == "askfoodtype":
             if self.food == None and self.askfood == None: # First try
                 response = 'What type of food do you want?'
                 return response
@@ -207,6 +208,7 @@ class dialogClass:
         if self.state == 'askpricerange':
             if self.price == None and self.askprice == None:
                 response = f'Got it! you want {self.food} in {self.area} area. What price range do you want?' 
+                return response
             elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
                 response = 'Preference for price not recognized, please give an alternative.'
                 return response
@@ -282,13 +284,16 @@ class dialogClass:
             else: #levenshtein
                 utterance_split = f_utterance.split(' ')
                 for word in utterance_split:
+                    print(ratio(word, f_type))
+                    print(f_type)
                     if ratio(word, f_type) > cutoff:
                         type = f_type
                         asktype = "Found"
+                        break
                     break
         
         if asktype == None:
-            print(f'test: if {asktype} == None:')
+            print(f'test: if asktype:{asktype} == None:')
             asktype = "Not Found"
 
     def extractor(self, utterance):
@@ -325,15 +330,21 @@ class dialogClass:
 
         # Checks whether a Levenshtein suggestion was made and accepted by the user for food, area and price. 
         self.asktype_check(self.food,self.askfood,dialog_act)
+        print("1. self.asktype_check(self.food,self.askfood,dialog_act)")
         self.asktype_check(self.area,self.askarea,dialog_act)
+        print("2. self.asktype_check(self.food,self.askfood,dialog_act)")
         self.asktype_check(self.price,self.askprice,dialog_act)
+        print("3. self.asktype_check(self.food,self.askfood,dialog_act)")
  
         # Extract food type
         self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)
+        print("1. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
         # Extract area type
         self.extract_type(self.area,self.askarea,area_keywords,0.9,utterance)
+        print("2. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
         # Extract price type
         self.extract_type(self.price,self.askprice,price_keywords,0.8,utterance)
+        print("3. self.extract_type(self.food,self.askfood,food_keywords,0.8,utterance)")
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
@@ -379,6 +390,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
-
-    
