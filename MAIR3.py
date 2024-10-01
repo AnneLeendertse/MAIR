@@ -394,12 +394,10 @@ class dialogClass:
         # Checks whether a Levenshtein suggestion was made and accepted by the user for food, area and price. 
         self.asktype_check(dialog_act)
 
- 
         # Extract food type
         self.extract_type(food_keywords, 0.8, utterance, 'food')
-        self.extract_type(area_keywords, 0.9, utterance, 'area')
+        self.extract_type(area_keywords, 0.7, utterance, 'area')
         self.extract_type(price_keywords, 0.8, utterance, 'price')
-
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
@@ -410,23 +408,29 @@ class dialogClass:
                 for word in utterance_split[i:]:
                     if word == 'food':
                         self.food = 'any'
+                        self.askfood = 'Checked'
                         break
                     elif word == 'area':
                         self.area = 'any'
+                        self.askarea = 'Checked'
                         break
                     elif word == 'price':
                         self.price = 'any'
+                        self.askprice = 'Checked'
                         break                       
                                     
                     else: 
                         if self.state == 'askfood':
                             self.food = 'any'
+                            self.askfood = 'Checked'
                             break
                         elif self.state == 'askarea':
                             self.area = 'any'
+                            self.askarea = 'Checked'
                             break
                         elif self.state == 'askprice':
                             self.price = 'any'
+                            self.askprice = 'Checked'
                             break
                         break
                 break
