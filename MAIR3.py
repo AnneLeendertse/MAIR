@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from Levenshtein import ratio
+import time
 
 # Opens the dataframe
 df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
@@ -184,17 +185,19 @@ def reasoning(possible_restaurants, additional_pref):
 
 class dialogClass:
     def __init__(self, state=None, food=None, area=None, price=None, possible_restaurants=None, terminate=None):
-        self.state = "welcome"
+        self.state = "askcaps"
         self.food = None
         self.area = None
         self.price = None
         self.askfood = None
         self.askarea = None
         self.askprice = None
-        self.reasoning = None
+        self.reasoning = None # moet misschien nog weg
         self.cutoff = 0.8
         self.possible_restaurants = None
         self.terminate = 0
+
+        self.caps = None # new
 
     # Method to respond to the user depending on the dialog state and utterance classification
 
@@ -204,6 +207,25 @@ class dialogClass:
 
         print(dialog_act)
 
+        # ASKCAPS state --> checks with user  if they want the responses in caps or not
+        if self.state == "askcaps":
+            if self.caps == None:
+
+                if dialog_act == 'affirm':
+                    self.caps = True
+                    response = 'Alright, I will respond to you in only capital letters. \nYou can now ask for restaurants by area, price range or food type. How may I help you?'
+                    return response
+                elif dialog_act == 'negate': 
+                    self.caps = False
+                    response = 'Alright, I will respond to you normally. \nYou can now ask for restaurants by area, price range or food type. How may I help you?'
+                    return response
+                else:
+                    response = 'I did not get that. Do you want me to respond in capital letters?'
+                    return response
+            else:
+                self.state = 'welcome'
+
+
         # WELCOME state
         if self.state == 'welcome':
             if dialog_act == 'hello':
@@ -212,6 +234,7 @@ class dialogClass:
             else:
                 self.state = "askfood"
                   
+
         # ASK FOODTYPE state
         if self.state == "askfood":
             if self.food == None and self.askfood == None: # First try
@@ -305,11 +328,18 @@ class dialogClass:
         if self.state == "startover":
             if utterance in ["yes", "y", "yeah", "startover", "start over", "restart", "please", "sure"]:
                 for attr in vars(self):
-                    if attr != "terminate": # Resets all variables to None except terminate 
+                    if attr != "terminate" and attr != "caps": # Resets all variables to None except terminate 
                         setattr(self, attr, None)
-                self.state = "welcome"
-                response = "Alright we will start over, what are your new preferences?"
+                self.state = "askcaps"
+
+                if self.caps == True:
+                    response = "ALRIGHT WE WILL START OVER, WOULD YOU LIKE ME TO USE CAPITAL LETTERS OR NOT?"
+                else:
+                    response = "Alright we will start over, would you like me to use capital letters or not?"
+                
+                self.caps = None
                 return response
+            
             else:
                 self.terminate = 1
                 response = "Ok, bye then"
@@ -439,12 +469,19 @@ class dialogClass:
 
 def main():
     dialog = dialogClass()
-    print('system: Hello, welcome to the greatest MAIR restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?')
+    print('system: Hello, welcome to the greatest MAIR restaurant system! Before we start, would you like me to respond in CAPITALS or not?')
+    #print('system: Hello, welcome to the greatest MAIR restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?')
 
     while dialog.terminate == 0:
         utterance = input('user: ').replace('?', '').replace('!', '').replace('.', '').replace(',', '').lower() #to remove punctuation. I don't know if lower() is necessary (or maybe only here)
         dialog.extractor(utterance)
         response = dialog.responder(utterance)
+
+        # checks if response needs to be upper case
+        if dialog.caps == True:
+            response = response.upper()
+
+        time.sleep(1.0)
         print('system: ', response)
 
 if __name__ == '__main__':
