@@ -127,6 +127,7 @@ def find_restaurant(food, area, price):
 
 
 # Small function that removes pd.Series duplictates from a list
+#voegt nu twee restaurants toe als ze niet hetzelfde zijn, maar als ze wel hetzelfde zijn voegt hij er maar 1 toe. Maar hier we kunnen nog wat aan doen. 
 def remove_duplicate_series(series_list):
    unique_list = []
    for series in series_list:
@@ -189,11 +190,11 @@ class dialogClass:
         self.food = None
         self.area = None
         self.price = None
+        self.addpref = None
         self.askfood = None
         self.askarea = None
         self.askprice = None
-        self.reasoning = None # moet misschien nog weg
-        self.cutoff = 0.8
+        self.askaddpref = None
         self.possible_restaurants = None
         self.terminate = 0
 
@@ -275,18 +276,20 @@ class dialogClass:
                 response = f'Did you mean {self.price}?'
                 return response
             elif self.price != None and self.askprice =="Checked": # When input is found and checked go to ask area.
-                self.state = "reasoning"
+                self.state = "addpref"
 
         # REASONING state --> still needs to be adapted, also the extractor
-        if self.state == 'reasoning':
-            if self.reasoning == None:
-
-                self.reasoning = ["CHILDREN", "TOURISTIC"] # Example, this should be extracted in the extractor
-
-                response = "What other preferences do you have? "
+        if self.state == 'addpref':
+            if self.addpref == None and self.askaddpref == None:
+                response = f'Got it! you want {self.food} food in {self.area} area. What price range do you want?' 
                 return response
-
-            else:
+            elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+                response = 'Preference for price not recognized, please give an alternative.'
+                return response
+            elif self.price != None and self.askprice =="Found": # When input is not recognized but levenshtein found a possibile answer.
+                response = f'Did you mean {self.price}?'
+                return response
+            elif self.price != None and self.askprice =="Checked": # When input is found and checked go to ask area.
                 self.state = "recommend"
 
 
@@ -415,6 +418,10 @@ class dialogClass:
         price_keywords = [
             'cheap', 'moderate', 'expensive'
             ]
+        
+        alternative_keywords = [
+            'children', 'touristic', 'no assigned seats', 'romantic'
+        ]
         
         dontcare_keywords = [
             'dont care', 'any', 'doesnt matter', 'whatever', 'no preference', 'anything',
