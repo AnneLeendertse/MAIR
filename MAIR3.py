@@ -8,6 +8,8 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from Levenshtein import ratio
 import time
+import configparser
+import os.path
 
 # Opens the dataframe
 df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
@@ -185,8 +187,8 @@ def reasoning(possible_restaurants, additional_pref):
 # e.g. I’m looking for ItaliEn food → ItaliEn is the food type based on pattern {variable} food. ItaliEn is one leventein distance away from Italian -> keyword should be Italian.
 
 class dialogClass:
-    def __init__(self, state=None, food=None, area=None, price=None, possible_restaurants=None, terminate=None):
-        self.state = "askcaps"
+    def __init__(self, config, state=None, food=None, area=None, price=None, possible_restaurants=None, terminate=None):
+        self.state = "welcome"
         self.food = None
         self.area = None
         self.price = None
@@ -197,8 +199,12 @@ class dialogClass:
         self.askaddpref = None
         self.possible_restaurants = None
         self.terminate = 0
-
-        self.caps = None # new
+        self.allcaps = config['allcaps']
+        self.levenshtein_cutoff_food = config['levenshtein_cutoff_food']
+        self.levenshtein_cutoff_area = config['levenshtein_cutoff_area']
+        self.levenshtein_cutoff_price = config['levenshtein_cutoff_price']
+        self.delay = config['delay']
+        self.allow_restart = config['allow_restart']
 
     # Method to respond to the user depending on the dialog state and utterance classification
 
@@ -207,25 +213,6 @@ class dialogClass:
         dialog_act = perform_classification(utterance)
 
         print(dialog_act)
-
-        # ASKCAPS state --> checks with user  if they want the responses in caps or not
-        if self.state == "askcaps":
-            if self.caps == None:
-
-                if dialog_act == 'affirm':
-                    self.caps = True
-                    response = 'Alright, I will respond to you in only capital letters. \nYou can now ask for restaurants by area, price range or food type. How may I help you?'
-                    return response
-                elif dialog_act == 'negate': 
-                    self.caps = False
-                    response = 'Alright, I will respond to you normally. \nYou can now ask for restaurants by area, price range or food type. How may I help you?'
-                    return response
-                else:
-                    response = 'I did not get that. Do you want me to respond in capital letters?'
-                    return response
-            else:
-                self.state = 'welcome'
-
 
         # WELCOME state
         if self.state == 'welcome':
@@ -432,9 +419,9 @@ class dialogClass:
         self.asktype_check(dialog_act)
 
         # Extract food type
-        self.extract_type(food_keywords, 0.8, utterance, 'food')
-        self.extract_type(area_keywords, 0.7, utterance, 'area')
-        self.extract_type(price_keywords, 0.8, utterance, 'price')
+        self.extract_type(food_keywords, self.levenshtein_cutoff_food, utterance, 'food')
+        self.extract_type(area_keywords, self.levenshtein_cutoff_area, utterance, 'area')
+        self.extract_type(price_keywords, self.levenshtein_cutoff_price, utterance, 'price')
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
@@ -474,10 +461,58 @@ class dialogClass:
         return
 
 
+# Creates a config.ini file for global variables such as allcaps
+def create_config():
+    config = configparser.ConfigParser()
+
+    # Add sections and key-value pairs
+    config['General'] = {'allcaps': False, 
+                         'levenshtein_cutoff_food': 0.8, 
+                         'levenshtein_cutoff_area': 0.65, 
+                         'levenshtein_cutoff_price': 0.75, 
+                         'delay':0.5, 
+                         'allow_restart': True
+                         }
+
+    # Write the configuration to a file
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+
+# Reads the config.ini file for global variables such as allcaps
+def read_config():
+    # Creates config file if it doesn't exist
+    if os.path.isfile('config.ini') == False:
+        create_config()
+
+    # Read the configuration file
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    # Access values from the configuration file
+    allcaps = config.getboolean('General', 'allcaps')
+    levenshtein_cutoff_food = config.getfloat('General', 'levenshtein_cutoff_food')
+    levenshtein_cutoff_area = config.getfloat('General', 'levenshtein_cutoff_area')
+    levenshtein_cutoff_price = config.getfloat('General', 'levenshtein_cutoff_price')
+    delay = config.getfloat('General', 'delay')
+    allow_restart = config.getboolean('General', 'allow_restart')
+
+    # Return a dictionary with the retrieved values
+    config_values = {
+        'allcaps': allcaps,
+        'levenshtein_cutoff_food': levenshtein_cutoff_food,
+        'levenshtein_cutoff_area': levenshtein_cutoff_area,
+        'levenshtein_cutoff_price': levenshtein_cutoff_price,
+        'delay': delay,
+        'allow_restart': allow_restart
+    }
+
+    return config_values
+
 def main():
-    dialog = dialogClass()
-    print('system: Hello, welcome to the greatest MAIR restaurant system! Before we start, would you like me to respond in CAPITALS or not?')
-    #print('system: Hello, welcome to the greatest MAIR restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?')
+    config = read_config()
+    dialog = dialogClass(config)
+
+    print('system: Hello, welcome to the greatest MAIR restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?') # We should still make this caps in case allcaps == True
 
     while dialog.terminate == 0:
         utterance = input('user: ').replace('?', '').replace('!', '').replace('.', '').replace(',', '').lower() #to remove punctuation. I don't know if lower() is necessary (or maybe only here)
@@ -485,7 +520,7 @@ def main():
         response = dialog.responder(utterance)
 
         # checks if response needs to be upper case
-        if dialog.caps == True:
+        if dialog.allcaps == True:
             response = response.upper()
 
         time.sleep(1.0)
