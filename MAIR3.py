@@ -12,7 +12,7 @@ import configparser
 import os.path
 
 # Opens the dataframe
-df = pd.read_csv('C:/Users/Peter/OneDrive - Universiteit Utrecht/Documents/MAIR-main/MAIR-main/dialog_acts.dat', names=['dialog_act', 'utterance_content'])
+df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
 df[['dialog_act', 'utterance_content']] = df['dialog_act'].str.split(' ', n=1, expand=True)
 
 # Split the full dataset in a training part of 85% and a test part of 15%.
@@ -114,7 +114,7 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
 #--------------------------------------------------------------
 def find_restaurant(food, area, price):
-    df = pd.read_csv('C:/Users/Peter/OneDrive - Universiteit Utrecht/Documents/MAIR-main/MAIR-main/restaurants_info_with_attributes.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode","food_quality","crowdedness","length_of_stay"])
+    df = pd.read_csv('./restaurants_info_with_attributes.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode","food_quality","crowdedness","length_of_stay"])
     
     possible_restaurants = []
 
@@ -143,8 +143,6 @@ def remove_duplicate_series(series_list):
 # Still needs to be implemented in the recommender state
 def reasoning(possible_restaurants, addpref):
    new_possible_restaurants = []
-
-
    for restaurant_row in possible_restaurants:
        # Checks which of the possible restaurants is TOURISTIC
        if "touristic" in addpref:
@@ -152,7 +150,6 @@ def reasoning(possible_restaurants, addpref):
                pass
            elif restaurant_row['pricerange'] == 'cheap' and restaurant_row['food_quality'] == 'good':
                new_possible_restaurants.append(restaurant_row)
-
 
        # Checks which of the possible restaurants has ASSIGNED SEATS
        if "no assigned seats" in addpref:
@@ -199,6 +196,11 @@ class dialogClass:
         self.askaddpref = None
         self.possible_restaurants = None
         self.terminate = 0
+        self.config = config
+        self.set_config(config)
+
+    # Method to set global variables according to config. We do this so i can call it again in case of 'restart'/'startover'.
+    def set_config(self, config):
         self.allcaps = config['allcaps']
         self.levenshtein_cutoff_food = config['levenshtein_cutoff_food']
         self.levenshtein_cutoff_area = config['levenshtein_cutoff_area']
@@ -320,22 +322,17 @@ class dialogClass:
         if self.state == "startover":
             if utterance in ["yes", "y", "yeah", "startover", "start over", "restart", "please", "sure"]:
                 for attr in vars(self):
-                    if attr != "terminate": #and attr != "caps": # Resets all variables to None except terminate 
+                    if attr != "terminate" and attr != "config": # Resets all variables to None except terminate and the config file
                         setattr(self, attr, None)
-                # self.state = "askcaps"
-
-                # if self.caps == True:
-                #     response = "ALRIGHT WE WILL START OVER, WOULD YOU LIKE ME TO USE CAPITAL LETTERS OR NOT?"
-                # else:
-                #     response = "Alright we will start over, would you like me to use capital letters or not?"
-                
-                # self.caps = None
-                return response
+                    self.set_config(self.config) # Resets the variables based on the config.ini file
+                self.state = "welcome"
+                response = "Alright we will start over, what are your new preferences?"
             
             else:
                 self.terminate = 1
                 response = "Ok, bye then"
-                return response
+            
+            return response
 
     # Check for the asktype
     def asktype_check(self, dialog):
@@ -433,7 +430,7 @@ class dialogClass:
         self.extract_type(price_keywords, self.levenshtein_cutoff_price, utterance, 'price')
         self.extract_type(alternative_keywords, self.levenshtein_cutoff_additional, utterance, 'addpref')
 
-        # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
+        # Extract dontcare; --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
             if dontcare in utterance:
                 utterance_split = utterance.split(' ')  #let op komma's en punten
