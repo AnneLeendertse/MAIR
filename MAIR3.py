@@ -12,7 +12,7 @@ import configparser
 import os.path
 
 # Opens the dataframe
-df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
+df = pd.read_csv('C:/Users/Peter/OneDrive - Universiteit Utrecht/Documents/MAIR-main/MAIR-main/dialog_acts.dat', names=['dialog_act', 'utterance_content'])
 df[['dialog_act', 'utterance_content']] = df['dialog_act'].str.split(' ', n=1, expand=True)
 
 # Split the full dataset in a training part of 85% and a test part of 15%.
@@ -114,7 +114,7 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
 #--------------------------------------------------------------
 def find_restaurant(food, area, price):
-    df = pd.read_csv('./restaurants_info_with_attributes.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode","food_quality","crowdedness","length_of_stay"])
+    df = pd.read_csv('C:/Users/Peter/OneDrive - Universiteit Utrecht/Documents/MAIR-main/MAIR-main/restaurants_info_with_attributes.csv', names=["restaurantname","pricerange","area","food","phone","addr","postcode","food_quality","crowdedness","length_of_stay"])
     
     possible_restaurants = []
 
@@ -141,13 +141,13 @@ def remove_duplicate_series(series_list):
 # Function that applies different rules to see if a restaurant fits the additional preferences
 # Additional pref can be: "TOURISTIC", "NO ASSIGNED SEATS", "CHILDREN", "ROMANTIC"
 # Still needs to be implemented in the recommender state
-def reasoning(possible_restaurants, additional_pref):
+def reasoning(possible_restaurants, addpref):
    new_possible_restaurants = []
 
 
    for restaurant_row in possible_restaurants:
        # Checks which of the possible restaurants is TOURISTIC
-       if "TOURISTIC" in additional_pref:
+       if "touristic" in addpref:
            if restaurant_row['food'] == 'romanian':
                pass
            elif restaurant_row['pricerange'] == 'cheap' and restaurant_row['food_quality'] == 'good':
@@ -155,17 +155,17 @@ def reasoning(possible_restaurants, additional_pref):
 
 
        # Checks which of the possible restaurants has ASSIGNED SEATS
-       if "NO ASSIGNED SEATS" in additional_pref:
+       if "no assigned seats" in addpref:
            if restaurant_row['crowdedness'] != 'busy':
                new_possible_restaurants.append(restaurant_row)
       
        # Checks which of the possible restaurants welcomes CHILDREN
-       if "CHILDREN" in additional_pref:
+       if "child friendly" in addpref:
            if restaurant_row['length_of_stay'] != 'long':
                new_possible_restaurants.append(restaurant_row)
       
        # Checks which of the possible restaurants is ROMANTIC
-       if "ROMANTIC" in additional_pref:
+       if "romantic" in addpref:
            if restaurant_row['crowdedness'] == 'busy':
                pass
            elif restaurant_row['length_of_stay'] == 'long':
@@ -174,7 +174,7 @@ def reasoning(possible_restaurants, additional_pref):
 
    new_possible_restaurants = remove_duplicate_series(new_possible_restaurants)
 
-   return new_possible_restaurants
+   return new_possible_restaurants if new_possible_restaurants else possible_restaurants
 
 
 # Class that:
@@ -203,6 +203,7 @@ class dialogClass:
         self.levenshtein_cutoff_food = config['levenshtein_cutoff_food']
         self.levenshtein_cutoff_area = config['levenshtein_cutoff_area']
         self.levenshtein_cutoff_price = config['levenshtein_cutoff_price']
+        self.levenshtein_cutoff_additional = config['levenshtein_cutoff_additional']
         self.delay = config['delay']
         self.allow_restart = config['allow_restart']
 
@@ -228,10 +229,10 @@ class dialogClass:
             if self.food == None and self.askfood == None: # First try
                 response = 'What type of food do you want?'
                 return response
-            elif self.food == None and self.askfood =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+            elif self.food == None and self.askfood =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
                 response = 'Preference for food not recognized, please give an alternative.'
                 return response
-            elif self.food != None and self.askfood =="Found": # When input is not recognized but levenshtein found a possibile answer.
+            elif self.food != None and self.askfood =="Found": # When input is not recognized but levenshtein found a possible answer.
                 response = f'Did you mean {self.food}?'
                 return response
             elif self.food != None and self.askfood =="Checked": # When input is found and checked go to ask area.
@@ -242,10 +243,10 @@ class dialogClass:
             if self.area == None and self.askarea == None:
                 response = f"Got it! You want {self.food} food. In which area do you want to eat (reply with north/east/south/west/centre)?"
                 return response
-            elif self.area == None and self.askarea =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+            elif self.area == None and self.askarea =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
                 response = 'Preference for area not recognized, please give an alternative.'
                 return response
-            elif self.area != None and self.askarea =="Found": # When input is not recognized but levenshtein found a possibile answer.
+            elif self.area != None and self.askarea =="Found": # When input is not recognized but levenshtein found a possible answer.
                 response = f'Did you mean {self.area}?'
                 return response
             elif self.area != None and self.askarea =="Checked": # When input is found and checked go to ask area.
@@ -256,10 +257,10 @@ class dialogClass:
             if self.price == None and self.askprice == None:
                 response = f'Got it! you want {self.food} food in {self.area} area. What price range do you want?' 
                 return response
-            elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
+            elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
                 response = 'Preference for price not recognized, please give an alternative.'
                 return response
-            elif self.price != None and self.askprice =="Found": # When input is not recognized but levenshtein found a possibile answer.
+            elif self.price != None and self.askprice =="Found": # When input is not recognized but levenshtein found a possible answer.
                 response = f'Did you mean {self.price}?'
                 return response
             elif self.price != None and self.askprice =="Checked": # When input is found and checked go to ask area.
@@ -268,15 +269,15 @@ class dialogClass:
         # REASONING state --> still needs to be adapted, also the extractor
         if self.state == 'addpref':
             if self.addpref == None and self.askaddpref == None:
-                response = f'Got it! you want {self.food} food in {self.area} area. What price range do you want?' 
+                response = f'Got it! you want {self.food} food in {self.area} area with in the {self.price} price range. Do you have any additional details?' 
                 return response
-            elif self.price == None and self.askprice =="Not Found": # When input is not recognized and levenshtein didnt find anything usefull.
-                response = 'Preference for price not recognized, please give an alternative.'
+            elif self.addpref == None and self.askaddpref =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
+                response = 'Preference for additional details not recognized, you can give the following additional details: .'
                 return response
-            elif self.price != None and self.askprice =="Found": # When input is not recognized but levenshtein found a possibile answer.
-                response = f'Did you mean {self.price}?'
+            elif self.addpref != None and self.askaddpref =="Found": # When input is not recognized but levenshtein found a possible answer.
+                response = f'Did you mean {self.addpref}?'
                 return response
-            elif self.price != None and self.askprice =="Checked": # When input is found and checked go to ask area.
+            elif self.addpref != None and self.askaddpref =="Checked": # When input is found and checked go to ask area.
                 self.state = "recommend"
 
 
@@ -284,12 +285,13 @@ class dialogClass:
         if self.state == 'recommend':
             if self.possible_restaurants == None:
                 self.possible_restaurants = find_restaurant(self.food, self.area, self.price)
-                self.possible_restaurants = reasoning(self.possible_restaurants, self.reasoning) # Provides reasoning filter
+                if self.addpref:
+                    self.possible_restaurants = reasoning(self.possible_restaurants, self.addpref) # Provides reasoning filter
 
                 if len(self.possible_restaurants) > 0:
                     restaurant_row = self.possible_restaurants.pop(0)
                     restaurant_name = restaurant_row['restaurantname']
-                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price, that is {self.addpref} is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\", otherwise type \"restart\" to start over.'
                     return response
                 else: 
                     response = "I'm very sorry, but there are no restaurants that fit your preferences, would you like to start over?"
@@ -318,16 +320,16 @@ class dialogClass:
         if self.state == "startover":
             if utterance in ["yes", "y", "yeah", "startover", "start over", "restart", "please", "sure"]:
                 for attr in vars(self):
-                    if attr != "terminate" and attr != "caps": # Resets all variables to None except terminate 
+                    if attr != "terminate": #and attr != "caps": # Resets all variables to None except terminate 
                         setattr(self, attr, None)
-                self.state = "askcaps"
+                # self.state = "askcaps"
 
-                if self.caps == True:
-                    response = "ALRIGHT WE WILL START OVER, WOULD YOU LIKE ME TO USE CAPITAL LETTERS OR NOT?"
-                else:
-                    response = "Alright we will start over, would you like me to use capital letters or not?"
+                # if self.caps == True:
+                #     response = "ALRIGHT WE WILL START OVER, WOULD YOU LIKE ME TO USE CAPITAL LETTERS OR NOT?"
+                # else:
+                #     response = "Alright we will start over, would you like me to use capital letters or not?"
                 
-                self.caps = None
+                # self.caps = None
                 return response
             
             else:
@@ -358,6 +360,13 @@ class dialogClass:
                 self.askprice = None
             elif dialog == ["affirm"]:
                 self.askprice = "Checked"
+        # Check in case Additional preference is found (using levenshtein)
+        if self.askaddpref == "Found":
+            if dialog == ["negate"]:
+                self.addpref = None
+                self.askaddpref = None
+            elif dialog == ["affirm"]:
+                self.askaddpref = "Checked"
 
        
     # Method to extract type (food/area/price) from utterance and apply Levenshtein 
@@ -407,7 +416,7 @@ class dialogClass:
             ]
         
         alternative_keywords = [
-            'children', 'touristic', 'no assigned seats', 'romantic'
+            'child friendly', 'touristic', 'no assigned', 'romantic', 'assigned'
         ]
         
         dontcare_keywords = [
@@ -422,6 +431,7 @@ class dialogClass:
         self.extract_type(food_keywords, self.levenshtein_cutoff_food, utterance, 'food')
         self.extract_type(area_keywords, self.levenshtein_cutoff_area, utterance, 'area')
         self.extract_type(price_keywords, self.levenshtein_cutoff_price, utterance, 'price')
+        self.extract_type(alternative_keywords, self.levenshtein_cutoff_additional, utterance, 'addpref')
 
         # Extract dontcare; this doesn't work yet --> seems to work now. Needs more testing (25 sept 21:33)
         for dontcare in dontcare_keywords:
@@ -441,6 +451,10 @@ class dialogClass:
                     elif word == 'price':
                         self.price = 'any'
                         self.askprice = 'Checked'
+                        break
+                    elif word == 'addpref':
+                        self.addpref = 'any'
+                        self.askaddpref = 'Checked'
                         break                       
                                     
                     else: 
@@ -456,6 +470,10 @@ class dialogClass:
                             self.price = 'any'
                             self.askprice = 'Checked'
                             break
+                        elif self.state == 'addpref':
+                            self.addpref = 'any'
+                            self.askaddpref = 'Checked'
+                            break
                         break
                 break
         return
@@ -470,6 +488,7 @@ def create_config():
                          'levenshtein_cutoff_food': 0.8, 
                          'levenshtein_cutoff_area': 0.65, 
                          'levenshtein_cutoff_price': 0.75, 
+                         'levenshtein_cutoff_additional': 0.75,
                          'delay':0.5, 
                          'allow_restart': True
                          }
@@ -493,6 +512,7 @@ def read_config():
     levenshtein_cutoff_food = config.getfloat('General', 'levenshtein_cutoff_food')
     levenshtein_cutoff_area = config.getfloat('General', 'levenshtein_cutoff_area')
     levenshtein_cutoff_price = config.getfloat('General', 'levenshtein_cutoff_price')
+    levenshtein_cutoff_additional = config.getfloat('General', 'levenshtein_cutoff_additional')
     delay = config.getfloat('General', 'delay')
     allow_restart = config.getboolean('General', 'allow_restart')
 
@@ -502,6 +522,7 @@ def read_config():
         'levenshtein_cutoff_food': levenshtein_cutoff_food,
         'levenshtein_cutoff_area': levenshtein_cutoff_area,
         'levenshtein_cutoff_price': levenshtein_cutoff_price,
+        'levenshtein_cutoff_additional': levenshtein_cutoff_additional,
         'delay': delay,
         'allow_restart': allow_restart
     }
@@ -523,7 +544,7 @@ def main():
         if dialog.allcaps == True:
             response = response.upper()
 
-        time.sleep(1.0)
+        time.sleep(config['delay'])
         print('system: ', response)
 
 if __name__ == '__main__':
