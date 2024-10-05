@@ -10,30 +10,82 @@ from sklearn.neighbors import KNeighborsClassifier
 
 df = pd.read_table('dialog_acts.dat')
 
+
+# functions that deletes all duplicates for labels exept reqmore, restart, deny and repeat
+def delete_duplicates_alt(df):
+    df_filtered = df[df['dialog_act'].isin(['inform', 'request', 'confirm', 'ack', 'affirm', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou'])]
+    df_filtered_no_duplicates = df_filtered.drop_duplicates(subset='utterance_content', keep='first')
+    df_remaining = df[~df['dialog_act'].isin(['inform', 'request', 'confirm', 'ack', 'affirm', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou'])]
+    df_cleaned = pd.concat([df_filtered_no_duplicates, df_remaining]).reset_index(drop=True)
+
+    return df_cleaned
+
+
 #df['dialog_act', 'utterance_content'] = df.series.str.Split(" ", expand=False)
 
 df[['dialog_act', 'utterance_content']] = df['inform im looking for a moderately priced restaurant that serves'].str.split(" ", n=1, expand=True) # Add two additional columns;
 df = df.drop('inform im looking for a moderately priced restaurant that serves', axis=1) # Remove the first column. This method loses the first row as data.
 
+df_unique = df.drop_duplicates(subset='utterance_content', keep='first')
+
+df_unique_alt = delete_duplicates_alt(df)
+
+
+
 # Split the full dataset in a training part of 85% and a test part of 15%.
-train_df, test_df = train_test_split(df, test_size=0.15, random_state=0)
+train_df, test_df = train_test_split(df_unique_alt, test_size=0.15, random_state=1)
+
+
+# Obtains average utterance length in the dataset
+def average_length(dataframe):
+    utterance_lengths = []
+    for index, row in dataframe.iterrows():
+        utterance_lengths.append(len(row['utterance_content']))
+    
+    average = sum(utterance_lengths) / len(utterance_lengths)
+
+    return average
+
+        
 
 # Function that counts amount of instances of all unique labels in the dataframe (just to get insight in the data)
 def label_count(dataframe):
     # Creates dictionary of all unique labels
     labels = set(dataframe['dialog_act'].unique())
     labels_dict = dict.fromkeys(labels, 0)
+    total_count = 0
 
     # Counts the amount of instances of labels in dataset
     for index, row in dataframe.iterrows():
         labels_dict[row['dialog_act']] += 1
+        total_count = total_count + 1
     
     # Prints the amounts
     print('Instance count per label: ')
     for label, amount in labels_dict.items():
         print(label, ' : ', amount)
     
+    print('total: ', total_count)
+    
     print()
+
+
+# deletes duplicates in the dataframe
+def delete_duplicates(dataframe):
+    print('original length: ', len(dataframe))
+    dropped_dataframe = dataframe.drop_duplicates()
+    print('new length: ', len(dropped_dataframe))
+    return dropped_dataframe
+
+
+def delete_duplicates_alt(df):
+    df_filtered = df[df['dialog_act'].isin(['inform', 'request', 'confirm', 'ack', 'affirm', 'deny', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou'])]
+    df_filtered_no_duplicates = df_filtered.drop_duplicates(subset='utterance_content', keep='first')
+    df_remaining = df[~df['dialog_act'].isin(['inform', 'request', 'confirm', 'ack', 'affirm', 'deny', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou'])]
+    df_cleaned = pd.concat([df_filtered_no_duplicates, df_remaining]).reset_index(drop=True)
+
+    return df_cleaned
+
 
 
 # Quick function to reuse for asking prompts from user and converts to lower case
@@ -46,7 +98,6 @@ def ask_utterance():
 # Classifier 1 == keyword_baseline
 # Classifier 2 == Decision trees
 # Classifier 4 == K-Nearest neighbors
-
 def perform_classification(dataframe, classifier, train_df=train_df):
     while True:
         utterance = ask_utterance()
@@ -244,7 +295,17 @@ def TestKN(kn, vectorizer, label_encoder, df=test_df, target_column='dialog_act'
 
 
 def main():
+
+    # print(df_unique_alt)
+
+    # print(average_length(df))
+
+    print('df')
     label_count(df)
+    # print('unique')
+    # label_count(df_unique)
+    print('unique_alt')
+    label_count(df_unique_alt)
     #majority_baseline(test_df)
     #keyword_baseline()
     #perform_classification(test_df, 1)
@@ -257,11 +318,15 @@ def main():
     kn, vectorizer, label_encoder = CreateKNearest()
     TestKN(kn, vectorizer, label_encoder)
 
+    tree, vectorizer_t, label_encoder_t = CreateTree(train_df)
+    TestTree(tree, vectorizer_t, label_encoder_t)
+
 
     perform_classification(df,3)
 
     perform_classification(df, 2)
 
+    delete_duplicates(df)
 
 
 main()
