@@ -71,23 +71,6 @@ def ask_utterance():
 tree, vectorizer_tree, label_encoder_tree = CreateTree(train_df)
 kn, vectorizer_kn, label_encoder_kn = CreateKNearest(train_df)
 
-
-# both functions below work (I think) 
-
-# def perform_classification(utterance, classifier=0):
-#     if classifier == 0:
-#         # Decision tree classification
-#         utterance_vec = vectorizer_tree.transform([utterance])
-#         label_int = tree.predict(utterance_vec)
-#         label_text = label_encoder_tree.inverse_transform(label_int)
-#         return label_text[0]
-#     else:
-#         # K-nearest neighbors classification
-#         utterance_vec = vectorizer_kn.transform([utterance])
-#         label_int = kn.predict(utterance_vec)
-#         label_text = label_encoder_kn.inverse_transform(label_int)
-#         return label_text[0]
-#--------------------------------------------------------------
 def perform_classification(utterance, classifier=0, dataframe=df, train_df=train_df):
     # Performs the chosen way of classification
     if classifier == 0:
@@ -99,7 +82,7 @@ def perform_classification(utterance, classifier=0, dataframe=df, train_df=train
 
         return label_text
     else:
-        # Second machine learning technique: K nearest neighbors (K=5)
+        # Second machine learning technique: K nearest neighbors
         kn, vectorizer, label_encoder = CreateKNearest(dataframe)
         utterance_vec = vectorizer.transform([utterance])
         label_int = kn.predict(utterance_vec) 
