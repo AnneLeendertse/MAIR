@@ -123,28 +123,29 @@ def reasoning(possible_restaurants, addpref):
    new_possible_restaurants = []
    for restaurant_row in possible_restaurants:
        # Checks which of the possible restaurants is TOURISTIC
-       if "touristic" in addpref:
-           if restaurant_row['food'] == 'romanian':
+
+        if "touristic" in addpref:
+            if restaurant_row['food'] == 'romanian':
                pass
-           elif restaurant_row['pricerange'] == 'cheap' and restaurant_row['food_quality'] == 'good':
-               new_possible_restaurants.append(restaurant_row)
+            elif restaurant_row['pricerange'] == 'cheap' and restaurant_row['food_quality'] == 'good':
+                new_possible_restaurants.append(restaurant_row)
 
        # Checks which of the possible restaurants has ASSIGNED SEATS
-       if "assigned seats" in addpref:
-           if restaurant_row['crowdedness'] == 'busy':
-               new_possible_restaurants.append(restaurant_row)
+        if "assigned seats" in addpref:
+            if restaurant_row['crowdedness'] == 'busy':
+                new_possible_restaurants.append(restaurant_row)
       
        # Checks which of the possible restaurants welcomes CHILDREN
-       if "child friendly" in addpref:
-           if restaurant_row['length_of_stay'] != 'long':
-               new_possible_restaurants.append(restaurant_row)
+        if "child friendly" in addpref:
+            if restaurant_row['length_of_stay'] != 'long':
+                new_possible_restaurants.append(restaurant_row)
       
        # Checks which of the possible restaurants is ROMANTIC
-       if "romantic" in addpref:
-           if restaurant_row['crowdedness'] == 'busy':
-               pass
-           elif restaurant_row['length_of_stay'] == 'long':
-               new_possible_restaurants.append(restaurant_row)
+        if "romantic" in addpref:
+            if restaurant_row['crowdedness'] == 'busy':
+                pass
+            elif restaurant_row['length_of_stay'] == 'long':
+                new_possible_restaurants.append(restaurant_row)
 
 
    new_possible_restaurants = remove_duplicate_series(new_possible_restaurants)
