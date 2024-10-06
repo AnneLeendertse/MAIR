@@ -118,8 +118,7 @@ def remove_duplicate_series(series_list):
 
 
 # Function that applies different rules to see if a restaurant fits the additional preferences
-# Additional pref can be: "TOURISTIC", "NO ASSIGNED SEATS", "CHILDREN", "ROMANTIC"
-# Still needs to be implemented in the recommender state
+# Additional pref can be: "TOURISTIC", "ASSIGNED SEATS", "CHILDREN", "ROMANTIC"
 def reasoning(possible_restaurants, addpref):
    new_possible_restaurants = []
    for restaurant_row in possible_restaurants:
@@ -131,8 +130,8 @@ def reasoning(possible_restaurants, addpref):
                new_possible_restaurants.append(restaurant_row)
 
        # Checks which of the possible restaurants has ASSIGNED SEATS
-       if "no assigned seats" in addpref:
-           if restaurant_row['crowdedness'] != 'busy':
+       if "assigned seats" in addpref:
+           if restaurant_row['crowdedness'] == 'busy':
                new_possible_restaurants.append(restaurant_row)
       
        # Checks which of the possible restaurants welcomes CHILDREN
@@ -187,8 +186,6 @@ class dialogClass:
     def responder(self, utterance):
         dialog_act = perform_classification(utterance)
 
-        print(dialog_act)
-
         # WELCOME state
         if self.state == 'welcome':
             if dialog_act == 'hello':
@@ -196,8 +193,7 @@ class dialogClass:
                 return response
             else:
                 self.state = "askfood"
-                  
-
+                
         # ASK FOODTYPE state
         if self.state == "askfood":
             if self.food == None and self.askfood == None: # First try
@@ -243,7 +239,7 @@ class dialogClass:
         # REASONING state --> still needs to be adapted, also the extractor
         if self.state == 'addpref':
             if self.addpref == None and self.askaddpref == None:
-                response = f'Got it! you want {self.food} food in {self.area} area with in the {self.price} price range. Do you have any additional details?' 
+                response = f'Got it! you want {self.food} food in {self.area} area with in the {self.price} price range. Do you have any additional details (type \"any\" if not)?' 
                 return response
             elif self.addpref == None and self.askaddpref =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
                 response = 'Preference for additional details not recognized, you can give the following additional details: .'
@@ -259,13 +255,32 @@ class dialogClass:
         if self.state == 'recommend':
             if self.possible_restaurants == None:
                 self.possible_restaurants = find_restaurant(self.food, self.area, self.price)
-                if self.addpref:
+                if self.addpref == None or self.addpref == "any":
                     self.possible_restaurants = reasoning(self.possible_restaurants, self.addpref) # Provides reasoning filter
 
                 if len(self.possible_restaurants) > 0:
                     restaurant_row = self.possible_restaurants.pop(0)
                     restaurant_name = restaurant_row['restaurantname']
-                    response = f'A restaurant that serves {self.food} food in {self.area} part of town \n and that has {self.price} price, that is {self.addpref} is \"{restaurant_name}\". In case you want an \n alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+
+                    # Checks if preference is TOURISTIC
+                    if "touristic" in self.addpref:
+                        response = f'A restaurant that serves {self.food} food in {self.area} part of town, that has a {self.price} price and is {self.addpref} is \"{restaurant_name}\".\n It is {self.addpref} because it is cheap, has good food and is not Romanian. \n In case you want an alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+
+                    # Checks if preference is ASSIGNED SEATS
+                    if "assigned seats" in self.addpref:
+                        response = f'A restaurant that serves {self.food} food in {self.area} part of town, that has a {self.price} price and has {self.addpref} is \"{restaurant_name}\".\n It has {self.addpref} because it is busy. \n In case you want an alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+                    
+                    # Checks if preference is CHILDREN
+                    if "child friendly" in self.addpref:
+                        response = f'A restaurant that serves {self.food} food in {self.area} part of town, that has a {self.price} price and is {self.addpref} is \"{restaurant_name}\".\n It is {self.addpref} because the average stay is not long. \n In case you want an alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+                    
+                    # Checks if preference is ROMANTIC
+                    if "romantic" in self.addpref:
+                        response = f'A restaurant that serves {self.food} food in {self.area} part of town, that has a {self.price} price and is {self.addpref} is \"{restaurant_name}\".\n It is {self.addpref} because it is not busy and allows for long stays. \n In case you want an alternative, type \"alternative\", otherwise type \"restart\" to start over.'
+
+                    # In case there is no add. preference
+                    if self.addpref == "any" or self.addpref == None:
+                        response = f'A restaurant that serves {self.food} food in {self.area} part of town and that has {self.price} price is \"{restaurant_name}\".\n In case you want an alternative, type \"alternative\", otherwise type \"restart\" to start over.'
                     return response
                 else: 
                     response = "I'm very sorry, but there are no restaurants that fit your preferences, would you like to start over?"
@@ -385,7 +400,7 @@ class dialogClass:
             ]
         
         alternative_keywords = [
-            'child friendly', 'touristic', 'no assigned', 'romantic', 'assigned'
+            'child friendly', 'touristic', 'romantic', 'assigned'
         ]
         
         dontcare_keywords = [
