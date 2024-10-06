@@ -465,6 +465,8 @@ def create_config():
     # Write the configuration to a file
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
+    
+    print("New config file is created. All the values are set to default. These values can be changed in the config.ini file if needed. If so, please rerun this python script.")
 
 # Reads the config.ini file for global variables, such as 'allcaps'
 def read_config():
