@@ -226,19 +226,20 @@ def CreateTree(df=train_df, target_column='dialog_act', feature_column='utteranc
     return clf, vectorizer, label_encoder
 
 def TestTree(tree, vectorizer, label_encoder, df=test_df, target_column='dialog_act', feature_column='utterance_content'):
-
     features_test = df[feature_column]
     target_test = df[target_column]
 
     # Count vectorizer
     features_encoded = vectorizer.transform(features_test)
 
-    # label encoder voor de target column
+    # Label encoder for the target column
     target_encoded = label_encoder.transform(target_test)
 
     target_predict = tree.predict(features_encoded)
-    # accuracy = accuracy_score(target_encoded, target_predict) # Overbodig eigenlijk, ook al in de report
-    report = classification_report(target_encoded, target_predict, target_names=label_encoder.classes_)
+
+    # Ensure target_names matches the number of unique classes
+    target_names = ['inform', 'request', 'confirm', 'ack', 'affirm', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou', 'deny', 'restart', 'reqmore']
+    report = classification_report(target_encoded, target_predict, target_names=target_names)
 
     print(report)
 
@@ -266,19 +267,20 @@ def CreateKNearest(train_df=train_df, target_column='dialog_act', feature_column
     return kn, vectorizer, label_encoder
 
 def TestKN(kn, vectorizer, label_encoder, df=test_df, target_column='dialog_act', feature_column='utterance_content'):
-
     features_test = df[feature_column]
     target_test = df[target_column]
 
     # Count vectorizer
     features_encoded = vectorizer.transform(features_test)
 
-    # label encoder voor de target column
+    # Label encoder for the target column
     target_encoded = label_encoder.transform(target_test)
 
     target_predict = kn.predict(features_encoded)
-    # accuracy = accuracy_score(target_encoded, target_predict) # Overbodig eigenlijk, ook al in de report
-    report = classification_report(target_encoded, target_predict, target_names=label_encoder.classes_)
+
+    # Ensure target_names matches the number of unique classes
+    target_names = ['inform', 'request', 'confirm', 'ack', 'affirm', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou', 'deny', 'restart', 'reqmore']
+    report = classification_report(target_encoded, target_predict, target_names=target_names)
 
     print(report)
 
