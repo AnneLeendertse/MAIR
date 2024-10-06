@@ -341,7 +341,7 @@ class dialogClass:
     def extractor(self, utterance):
         # Lowercase the utterance for case-insensitive matching
         utterance = utterance.lower()
-        dialog_act = perform_classification(utterance) # Kan efficienter
+        dialog_act = perform_classification(utterance)
 
         # Define keywords for food type
         food_keywords = [
