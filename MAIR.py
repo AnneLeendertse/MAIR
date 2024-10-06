@@ -7,10 +7,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 
-
-df = pd.read_table('dialog_acts.dat')
-
-
 # functions that deletes all duplicates for labels exept reqmore, restart, deny and repeat
 def delete_duplicates_alt(df):
     df_filtered = df[df['dialog_act'].isin(['inform', 'request', 'confirm', 'ack', 'affirm', 'hello', 'reqalts', 'null', 'negate', 'bye', 'thankyou'])]
@@ -20,21 +16,16 @@ def delete_duplicates_alt(df):
 
     return df_cleaned
 
+# Opens the dataframe
+df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
+df[['dialog_act', 'utterance_content']] = df['dialog_act'].str.split(' ', n=1, expand=True)
 
-#df['dialog_act', 'utterance_content'] = df.series.str.Split(" ", expand=False)
-
-df[['dialog_act', 'utterance_content']] = df['inform im looking for a moderately priced restaurant that serves'].str.split(" ", n=1, expand=True) # Add two additional columns;
-df = df.drop('inform im looking for a moderately priced restaurant that serves', axis=1) # Remove the first column. This method loses the first row as data.
-
+# Deletes duplicates from DF.
 df_unique = df.drop_duplicates(subset='utterance_content', keep='first')
-
 df_unique_alt = delete_duplicates_alt(df)
-
-
 
 # Split the full dataset in a training part of 85% and a test part of 15%.
 train_df, test_df = train_test_split(df_unique_alt, test_size=0.15, random_state=1)
-
 
 # Obtains average utterance length in the dataset
 def average_length(dataframe):
@@ -45,8 +36,6 @@ def average_length(dataframe):
     average = sum(utterance_lengths) / len(utterance_lengths)
 
     return average
-
-        
 
 # Function that counts amount of instances of all unique labels in the dataframe (just to get insight in the data)
 def label_count(dataframe):
