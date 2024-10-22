@@ -10,6 +10,7 @@ from Levenshtein import ratio
 import time
 import configparser
 import os.path
+import sys
 
 # Opens the dataframe
 df = pd.read_csv('./dialog_acts.dat', names=['dialog_act', 'utterance_content'])
@@ -474,7 +475,7 @@ def create_config():
                          'levenshtein_cutoff_area': 0.65, 
                          'levenshtein_cutoff_price': 0.75, 
                          'levenshtein_cutoff_additional': 0.75,
-                         'delay':0.5, 
+                         'delay': False, 
                          'allow_restart': True
                          }
 
@@ -500,7 +501,7 @@ def read_config():
     levenshtein_cutoff_area = config.getfloat('General', 'levenshtein_cutoff_area')
     levenshtein_cutoff_price = config.getfloat('General', 'levenshtein_cutoff_price')
     levenshtein_cutoff_additional = config.getfloat('General', 'levenshtein_cutoff_additional')
-    delay = config.getfloat('General', 'delay')
+    delay = config.getboolean('General', 'delay')
     allow_restart = config.getboolean('General', 'allow_restart')
 
     # Return a dictionary with the retrieved values
@@ -541,7 +542,15 @@ def main():
             response = response.upper()
 
         # Prints the system response after a certain delay.
-        time.sleep(dialog.delay)
+        if dialog.delay is True:
+            response_split = response.split(" ")
+            respond_time = len(response_split)
+            typing_indicator = '.....'
+            for dot in typing_indicator:
+                sys.stdout.write(dot)
+                sys.stdout.flush()
+                time.sleep(respond_time * 0.85714285714 /5)
+            print()        
         print('system: ', response)
 
 if __name__ == '__main__':
