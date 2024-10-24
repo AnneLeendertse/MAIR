@@ -550,7 +550,7 @@ def main():
             for dot in typing_indicator:
                 sys.stdout.write(dot)
                 sys.stdout.flush()
-                time.sleep(respond_time * 0.85714285714 /5)
+                time.sleep(respond_time * 0.75 /5)
             print()        
         print('system: ', response)
 
