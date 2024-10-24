@@ -518,6 +518,7 @@ def read_config():
     return config_values
 
 def main():
+    print('\n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n')
     # Interaction starts by reading the configuration file and creating the dialog class based on that config.ini file.
     config = read_config()
     dialog = dialogClass(config)
