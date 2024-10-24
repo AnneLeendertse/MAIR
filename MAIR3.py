@@ -241,7 +241,7 @@ class dialogClass:
         # REASONING state --> still needs to be adapted, also the extractor
         if self.state == 'addpref':
             if self.addpref == None and self.askaddpref == None:
-                response = f'Got it! you want {self.food} food in {self.area} area with in the {self.price} price range. Do you have any additional details (type \"any\" if not)?' 
+                response = f'Got it! you want {self.food} food in {self.area} area with in the {self.price} price range. Do you have any additional details, such as: \"romantic\", \"child friendly\", \"touristic\", \"assigned\"? Type \"any\" if not.' 
                 return response
             elif self.addpref == None and self.askaddpref =="Not Found": # When input is not recognized and levenshtein didnt find anything useful.
                 response = 'Preference for additional details not recognized, you can give the following additional details: .'
